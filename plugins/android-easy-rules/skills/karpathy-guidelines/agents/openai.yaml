@@ -1,0 +1,4 @@
+interface:
+  display_name: "Karpathy 行为准则"
+  short_description: "用中文执行谨慎、简洁、精准、可验证的 AI 行为准则。"
+  default_prompt: "使用 Karpathy 行为准则处理这个任务：先澄清关键假设，保持交付简洁，只做必要修改，并给出可验证的成功标准。"

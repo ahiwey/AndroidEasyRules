@@ -1,0 +1,18 @@
+{
+  "name": "android-easy-rules",
+  "version": "0.2.0",
+  "description": "将中文 Android AGENTS.md、CLAUDE.md 规则与 Karpathy 行为准则导入 Android 项目。",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Android Easy Rules",
+    "shortDescription": "导入中文 Android 规则和 Karpathy 行为准则。",
+    "longDescription": "Android Easy Rules 会把中文 Android AI-agent 规则包导入目标项目，生成或合并 Codex AGENTS.md、Claude Code CLAUDE.md、MEMORY.md、聚焦 AGENTS/ 规则文件，并融合 Karpathy 风格的谨慎、简洁、精准、可验证行为准则，覆盖编码、文档、资料整理、表格和调研等任务。",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "将 AndroidEasyRules 导入当前 Android 项目，生成中文 AGENTS.md、CLAUDE.md，并融合 Karpathy 行为准则。"
+  }
+}
