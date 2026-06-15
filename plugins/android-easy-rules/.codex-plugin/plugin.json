@@ -1,6 +1,6 @@
 {
   "name": "android-easy-rules",
-  "version": "0.2.0",
+  "version": "0.2.0+codex.20260615125900",
   "description": "将中文 Android AGENTS.md、CLAUDE.md 规则与 Karpathy 行为准则导入 Android 项目。",
   "author": {
     "name": "Local developer"
