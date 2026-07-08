@@ -39,7 +39,8 @@
 
 1. 读取本目录 `README.md` 和 `IMPORT.md`。
 2. 查看目标项目已有规则文件，提取用户偏好和硬约束。
-3. 根据目标项目结构选择模板：
+3. 如用户要求同步个人全局规则，参考 `global-AGENTS.md` 合并到用户级 `~/.codex/AGENTS.md`；不要把项目业务索引写进全局规则。
+4. 根据目标项目结构选择模板：
    - 根规则：`root-AGENTS.template.md`
    - 主 app：`android-app-AGENTS.template.md`
    - 项目索引：`MEMORY.template.md`
@@ -47,20 +48,19 @@
    - BLE/设备 SDK：`ble-module-AGENTS.template.md`
    - Chat UI：`chatkit-module-AGENTS.template.md`
    - skin/theme：`skin-support-module-AGENTS.template.md`
-4. 生成或合并根 `AGENTS.md`。
-5. 生成或合并 `MEMORY.md`。
-6. 给重要模块生成或合并模块级 `AGENTS.md`。
-7. 保留独立规则文件到目标项目的 `AGENTS/` 目录：
-   - `karpathy-guidelines.md`
+5. 生成或合并根 `AGENTS.md`。
+6. 生成或合并 `MEMORY.md`。
+7. 给重要模块生成或合并模块级 `AGENTS.md`。
+8. 保留独立规则文件到目标项目的 `AGENTS/` 目录：
    - `commit-migration-rules.md`
    - `screenshot-ui-rules.md`
    - `image-resource-rules.md`
    - `custom-view-chart-rules.md`
    - `testing-build-rules.md`
-8. 替换所有占位符。
-9. 检查生成内容是否仍包含源项目名称、源包名、源 flavor 或无关业务。
-10. 普通手动导入以 `AGENTS.md` 为唯一完整规则源；插件导入时生成或合并 `CLAUDE.md` 薄入口，说明 Claude Code 读取 `AGENTS.md`，不复制完整项目规则。
-11. 最终说明生成了哪些文件、哪些规则来自已有项目、哪些需要用户确认。
+9. 替换所有占位符。
+10. 检查生成内容是否仍包含源项目名称、源包名、源 flavor 或无关业务。
+11. 普通手动导入以 `AGENTS.md` 为唯一完整规则源；插件导入时生成或合并 `CLAUDE.md` 薄入口，说明 Claude Code 读取 `AGENTS.md`，不复制完整项目规则。
+12. 最终说明生成了哪些文件、哪些规则来自已有项目、哪些需要用户确认。
 
 ## AGENTS.md 适配要求
 
@@ -70,7 +70,6 @@
 - `MEMORY.md` 先行检索规则。
 - 模块级 `AGENTS.md` 优先规则。
 - CodeGraph 与 `rg` 的使用边界。
-- Karpathy 行为准则入口，覆盖编码、文档、资料整理、表格、调研等任务中的澄清假设、简洁交付、精准修改和可验证成功标准。
 - 截图/UI/图片资源规则入口。
 - commit/branch 迁移规则入口，明确使用 `$commit-migration`。
 - 测试与构建规则入口。

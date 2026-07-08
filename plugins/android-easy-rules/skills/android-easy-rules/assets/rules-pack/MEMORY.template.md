@@ -20,18 +20,18 @@
 
 | 任务/关键词 | 先看哪里 | 再看哪里 |
 | --- | --- | --- |
-| 截图还原、图标替换、图片资源、视觉样式 | `<填写 app AGENTS 路径>` + `AGENTS/screenshot-ui-rules.md` | `res/mipmap*`、`res/drawable`、目标 layout |
+| 截图还原、图标替换、图片资源、视觉样式 | `app/AGENTS.md` + `AGENTS/screenshot-ui-rules.md` | `res/mipmap*`、`res/drawable`、目标 layout |
 | 自定义 View、健康图表、Canvas 绘制 | `AGENTS/custom-view-chart-rules.md` | 自定义 View 目录 |
 | 迁移 commit、提交范围、其他分支页面/功能 | `$commit-migration` + `AGENTS/commit-migration-rules.md` | `git show <ref>:<path>`、`git diff <source>...HEAD -- <path>` |
-| 页面、Fragment、Activity、UI 文案、布局 | `<填写 app AGENTS 路径>` | 主应用 UI 目录、`res/layout`、`res/values*` |
-| 网络请求、签名、API、Repository | `<填写 app AGENTS 路径>` | API/Repository/DI 目录 |
-| 权限、通知、广播、后台保活 | `<填写 app AGENTS 路径>` | permission/receiver/util/manifest |
+| 页面、Fragment、Activity、UI 文案、布局 | `app/AGENTS.md` | app UI 目录、`res/layout`、`res/values*` |
+| 网络请求、签名、API、Repository | `app/AGENTS.md` | API/Repository/DI 目录 |
+| 权限、通知、广播、后台保活 | `app/AGENTS.md` | permission/receiver/util/manifest |
 
 ## 模块索引
 
 | 模块 | 作用 | 优先规则 | 注意事项 |
 | --- | --- | --- | --- |
-| `<填写 app 模块名>` | 主 Android 应用 | `<填写 app AGENTS 路径>` | XML + ViewBinding，Kotlin/Java 混合 |
+| `<app>` | 主 Android 应用 | `app/AGENTS.md` | XML + ViewBinding，Kotlin/Java 混合 |
 | `<library>` | 库模块 | `<library>/AGENTS.md` | 保持模块职责 |
 
 ## 业务索引

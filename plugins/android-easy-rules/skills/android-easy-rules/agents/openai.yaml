@@ -1,4 +1,4 @@
 interface:
   display_name: "Android Easy Rules"
-  short_description: "Import adaptive Android AGENTS and CLAUDE rules."
-  default_prompt: "Import AndroidEasyRules into this Android project and generate AGENTS.md and CLAUDE.md."
+  short_description: "Import bundled or external Android AGENTS rules."
+  default_prompt: "Import AndroidEasyRules into this Android project, or import a compatible AGENTS rules-pack path, and generate AGENTS.md and CLAUDE.md."

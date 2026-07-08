@@ -3,6 +3,7 @@
 ## 使用方式
 
 - 与用户沟通时使用中文说明。
+- 默认以“少读、准找、可验证”为工作原则：先确认任务类型和影响范围，再按最小上下文定位，不为“了解项目”全量扫描。
 - 本文件是项目级总入口，不是 README、业务文档或完整源码索引；只放跨项目硬规则、任务路由、修改边界和验证策略。
 - 文件请保存为 UTF-8，避免中文规则在终端或工具中乱码。
 - `AGENTS.md` 是唯一完整项目规则源；可以生成薄 `CLAUDE.md` 作为 Claude Code 入口，但不得复制两套会漂移的完整规则。
@@ -15,11 +16,6 @@
 - 是否补跑 assemble 由代理按影响范围自主判断：Kotlin/Java 逻辑改动优先聚焦测试或最小编译；涉及 XML、资源、manifest、签名、构建配置、跨模块链路或无法用单测覆盖的 app 代码时，再补受影响模块 assemble。
 - 修改代码时，优先保持项目现有风格与结构。
 
-## 执行准则
-
-- 非琐碎编码、文档、资料整理、表格、调研、评审、重构和修复任务遵循 `AGENTS/karpathy-guidelines.md`：先澄清关键假设，保持交付简洁，只做必要修改，并定义可验证成功标准。
-- 如果这些准则与更具体的用户要求或模块 `AGENTS.md` 冲突，以更具体的约束为准，但最终回复要说明取舍。
-
 ## 会话启动流程
 
 处理具体任务时按以下顺序收集上下文：
@@ -27,15 +23,19 @@
 1. 读取本文件，确认项目级规则和禁止事项。
 2. 在 `MEMORY.md` 检索业务关键词、模块名、页面名、协议名、资源名或错误现象。
 3. 读取目标目录最近的 `AGENTS.md`；子目录规则优先级高于根规则，但只补充模块约定，不应与根规则冲突。
-4. 结构性问题使用 CodeGraph 精准定位；固定文本、资源名、日志、注释等字面量使用 `rg`。
-5. 修改完成后按影响范围运行最小验证，并在最终回复说明验证命令、结果和未验证风险。
+4. 结构性问题使用 CodeGraph 精准定位；如果当前会话没有 `codegraph_*` 工具，必须先说明“CodeGraph 未接入”，再改用 `rg` 和精确文件读取。
+5. 固定文本、资源名、日志、注释等字面量使用 `rg`。
+6. 修改前给出极短执行计划，说明准备改哪些文件、为什么、如何验证。
+7. 修改完成后按影响范围运行最小验证，并在最终回复说明验证命令、结果和未验证风险。
 
 不要为了“了解项目”全量扫描仓库。先用 `MEMORY.md` 定位，再用 CodeGraph 或 `rg` 查证。
 
 ## 上下文与验证效率
 
 - `MEMORY.md` 默认只按关键词检索，不整文件读取；关键词包括业务名、模块名、页面名、协议名、资源名、错误现象和用户原话中的中英文别名。只有检索命中缺失、内容疑似过期或任务本身要求维护索引时，才读取相关段落或更新 `MEMORY.md`。
+- 如果项目规则要求 CodeGraph，但当前环境没有暴露 `codegraph_*` 工具，不要假装已使用；先告知用户，再使用 `rg` 和精确文件读取兜底。
 - CodeGraph 用于结构定位后，不再用宽泛 `rg` 重复查同一批符号；`rg` 只补查固定字符串、资源名、layout id、文案、日志和注释。需要补查时先限定目录和关键词。
+- 外部命令优先用 `rtk` 包装以减少输出噪音，例如 `rtk git status`、`rtk rg "keyword"`、`rtk .\gradlew.bat :app:assembleDebug`。
 - 读取 PowerShell 内置命令时按 RTK 约定使用 `rtk powershell -NoProfile -Command "..."`；可执行文件和脚本使用 `rtk <exe> ...`。不要先尝试 `rtk Get-Content`、`rtk Get-ChildItem` 等无法直接解析的 cmdlet。
 - Android 单测过滤优先使用通配形式，例如 `.\gradlew.bat :app:test<Flavor>DebugUnitTest --tests '*TargetTest*'`，避免 flavor 变体下精确类名过滤发现失败。
 - 可隔离逻辑改动优先新增小而准的纯单元测试；如果现有架构导致 Repository、Room、Android Context 难以直接单测，可以抽出无 Android 依赖的选择/映射/计算逻辑测试，并在最终回复说明覆盖边界。
@@ -72,7 +72,10 @@
 | 任务类型 | 优先读取 |
 | --- | --- |
 | 任意业务定位 | `MEMORY.md` |
-<填写上下文路由>
+| 主应用 UI、页面、网络、ViewModel、资源 | `app/AGENTS.md` |
+| BLE、设备协议、连接、同步、OTA | `Lib_SDK_BLE/AGENTS.md` |
+| 聊天消息列表、输入框、Chat UI | `ringchatkit/AGENTS.md` |
+| 皮肤兼容、主题模块 | 对应模块 `AGENTS.md` |
 | 符号定义、调用链、影响范围 | CodeGraph |
 | 字符串、资源名、日志、注释、固定文本 | `rg` |
 
@@ -89,7 +92,6 @@
 
 ## 必用规则文件
 
-- 非琐碎编码、文档、资料整理、表格、调研、评审、重构和修复任务：参考 `AGENTS/karpathy-guidelines.md`。
 - 截图/效果图/UI 设计图任务：参考 `AGENTS/screenshot-ui-rules.md`。
 - 图片、图标、drawable、mipmap 资源任务：参考 `AGENTS/image-resource-rules.md`。
 - 自定义 View、Canvas、图表任务：参考 `AGENTS/custom-view-chart-rules.md`。
