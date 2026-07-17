@@ -11,11 +11,14 @@
 - “使用这套 AGENTS 规则模板”
 - “把这个 AGENTS 规则包应用到当前项目”
 - “导入 AndroidEasyRules 插件”
+- “从 `ahiwey/AndroidEasyRules` 更新规则”
+- “从 `https://github.com/ahiwey/AndroidEasyRules.git` 导入最新版规则”
 - “生成 Codex 的 AGENTS.md 和 Claude Code 的 CLAUDE.md”
 
 ## 总原则
 
 - 导入规则时必须适配目标项目，不要机械复制。
+- 从 GitHub 更新规则必须由用户明确触发；不要在打开项目或会话启动时无确认自动拉取并写入文件。
 - 目标项目已有 `AGENTS.md`、`CLAUDE.md`、`MEMORY.md` 或模块规则时，必须先读取并合并，不要覆盖用户已有偏好。
 - 保留目标项目自己的协作偏好、语言要求、测试偏好、构建命令、模块职责和安全约束。
 - 模板中的占位符必须替换为目标项目实际信息。
@@ -39,8 +42,9 @@
 
 1. 读取本目录 `README.md` 和 `IMPORT.md`。
 2. 查看目标项目已有规则文件，提取用户偏好和硬约束。
-3. 如用户要求同步个人全局规则，参考 `global-AGENTS.md` 合并到用户级 `~/.codex/AGENTS.md`；不要把项目业务索引写进全局规则。
-4. 根据目标项目结构选择模板：
+3. 如果用户要求从 GitHub 最新版更新，先 clone/pull `https://github.com/ahiwey/AndroidEasyRules.git` 到本地缓存目录，再从缓存仓库运行 importer；不要把缓存仓库路径写入目标项目规则。
+4. 如用户要求同步个人全局规则，参考 `global-AGENTS.md` 合并到用户级 `~/.codex/AGENTS.md`；不要把项目业务索引写进全局规则。
+5. 根据目标项目结构选择模板：
    - 根规则：`root-AGENTS.template.md`
    - 主 app：`android-app-AGENTS.template.md`
    - 项目索引：`MEMORY.template.md`
@@ -48,10 +52,10 @@
    - BLE/设备 SDK：`ble-module-AGENTS.template.md`
    - Chat UI：`chatkit-module-AGENTS.template.md`
    - skin/theme：`skin-support-module-AGENTS.template.md`
-5. 生成或合并根 `AGENTS.md`。
-6. 生成或合并 `MEMORY.md`。
-7. 给重要模块生成或合并模块级 `AGENTS.md`。
-8. 保留独立规则文件到目标项目的 `AGENTS/` 目录：
+6. 生成或合并根 `AGENTS.md`。
+7. 生成或合并 `MEMORY.md`。
+8. 给重要模块生成或合并模块级 `AGENTS.md`。
+9. 保留独立规则文件到目标项目的 `AGENTS/` 目录：
    - `commit-migration-rules.md`
    - `screenshot-ui-rules.md`
    - `image-resource-rules.md`
@@ -60,10 +64,10 @@
    - `recording-sdk-rules.md`
    - `multilang-string-rules.md`
    - `r8-proguard-rules.md`
-9. 替换所有占位符。
-10. 检查生成内容是否仍包含源项目名称、源包名、源 flavor 或无关业务。
-11. 普通手动导入以 `AGENTS.md` 为唯一完整规则源；插件导入时生成或合并 `CLAUDE.md` 薄入口，说明 Claude Code 读取 `AGENTS.md`，不复制完整项目规则。
-12. 最终说明生成了哪些文件、哪些规则来自已有项目、哪些需要用户确认。
+10. 替换所有占位符。
+11. 检查生成内容是否仍包含源项目名称、源包名、源 flavor、缓存路径或无关业务。
+12. 普通手动导入以 `AGENTS.md` 为唯一完整规则源；插件导入时生成或合并 `CLAUDE.md` 薄入口，说明 Claude Code 读取 `AGENTS.md`，不复制完整项目规则。
+13. 最终说明生成了哪些文件、哪些规则来自已有项目、哪些需要用户确认。
 
 ## AGENTS.md 适配要求
 

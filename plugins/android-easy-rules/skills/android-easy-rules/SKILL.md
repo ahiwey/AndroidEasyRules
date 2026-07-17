@@ -18,6 +18,8 @@ Use this skill to install the bundled Android rules pack, or a compatible extern
    - Default to the bundled `assets/rules-pack/` directory.
    - If the user names an external rules-pack path such as `E:\...\AGENTS`, read that directory's `README.md` and `IMPORT.md` first.
    - Use the importer with `--rules-pack <path>` for external packs.
+   - If the user asks to update from `ahiwey/AndroidEasyRules` or `https://github.com/ahiwey/AndroidEasyRules.git`, clone or pull that repository into a local cache directory first, then run the cached importer against the target project.
+   - Do not automatically update from GitHub just because a project is opened; only do it when the user explicitly asks for the latest AndroidEasyRules.
 
 3. Do a quick read-only project scan before writing:
    - `settings.gradle` or `settings.gradle.kts`
@@ -71,5 +73,5 @@ After importing into a target project:
 
 - Read `AGENTS.md`, `CLAUDE.md`, and `MEMORY.md` as UTF-8.
 - Confirm `CLAUDE.md` points to `AGENTS.md` and does not duplicate the full rules.
-- Confirm generated rules do not mention source-project-specific package names, flavors, branches, or business names.
+- Confirm generated rules do not mention source-project-specific package names, flavors, branches, cache paths, or business names.
 - Do not run Android Gradle for rules-only imports unless the user asks or the import also changes Android code/resources.

@@ -4,6 +4,14 @@
 
 ## 对外使用方式
 
+如果要在当前 Android 项目里拉取 GitHub 最新版规则，直接对 Codex 说：
+
+```text
+从 https://github.com/ahiwey/AndroidEasyRules.git 更新 AndroidEasyRules，并导入当前 Android 项目。
+```
+
+Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 importer。不要把这个流程做成打开项目时无确认自动写入，避免频繁产生规则文件 diff。
+
 在其他项目中，可以直接对 Codex 说：
 
 ```text
@@ -73,6 +81,7 @@
 
 ## 导入建议
 
+- 推荐把 GitHub 最新版导入做成用户明确触发的动作，例如“更新 AndroidEasyRules”，不要配置成每次会话启动自动改写项目规则。
 - 根目录只保留“路由与硬规则”，不要塞满所有业务细节。
 - 每个重要模块放自己的 `AGENTS.md`，让更近的规则覆盖根规则。
 - `MEMORY.md` 作为业务索引，新增业务目录、入口类、协议类、自定义 View 时同步更新。

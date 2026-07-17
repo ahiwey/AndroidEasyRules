@@ -8,6 +8,14 @@
 - 文件请保存为 UTF-8，避免中文规则在终端或工具中乱码。
 - `AGENTS.md` 是唯一完整项目规则源；可以生成薄 `CLAUDE.md` 作为 Claude Code 入口，但不得复制两套会漂移的完整规则。
 
+## AndroidEasyRules 更新入口
+
+- 默认不要在会话启动或打开项目时自动从 GitHub 拉取并改写规则，避免无确认弄脏工作区。
+- 当用户明确要求“更新 AndroidEasyRules”“导入最新版规则”或点名 `ahiwey/AndroidEasyRules` 时，再从 GitHub 拉取最新版并导入当前项目。
+- 推荐缓存目录为 `%USERPROFILE%\.codex\cache\AndroidEasyRules`；如目录已存在，运行 `rtk git -C "%USERPROFILE%\.codex\cache\AndroidEasyRules" pull --ff-only`，否则运行 `rtk git clone https://github.com/ahiwey/AndroidEasyRules.git "%USERPROFILE%\.codex\cache\AndroidEasyRules"`。
+- 拉取后运行 `rtk python "%USERPROFILE%\.codex\cache\AndroidEasyRules\plugins\android-easy-rules\skills\android-easy-rules\scripts\import_android_easy_rules.py" <当前项目根目录>`。
+- 导入后至少检查 `AGENTS.md`、`CLAUDE.md`、`MEMORY.md` 和 `app/AGENTS.md` 可用 UTF-8 读取，并确认没有 `<填写...>` 占位符或源规则仓库路径残留。
+
 ## 协作偏好
 
 - 不把单元测试机械当作所有任务的完成条件；可隔离逻辑改动优先考虑聚焦测试。
