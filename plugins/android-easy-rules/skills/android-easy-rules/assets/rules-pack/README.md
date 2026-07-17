@@ -63,6 +63,9 @@
 | `image-resource-rules.md` | Android 图片、图标、drawable、mipmap 资源规则 |
 | `custom-view-chart-rules.md` | Canvas 自定义 View 和健康图表类规则 |
 | `testing-build-rules.md` | Android 测试与构建验证规则 |
+| `recording-sdk-rules.md` | 录音导入、Wi-Fi 传输、跨 SDK/Sample/AAR 覆盖规则 |
+| `multilang-string-rules.md` | 多语言 `strings.xml` 批量同步、品牌词替换和验证规则 |
+| `r8-proguard-rules.md` | R8/ProGuard/missing class/keep 规则分析与修改边界 |
 | `library-module-AGENTS.template.md` | 通用 Android library 模块规则 |
 | `ble-module-AGENTS.template.md` | BLE/设备协议模块规则 |
 | `chatkit-module-AGENTS.template.md` | 聊天 UI 组件模块规则 |
@@ -74,5 +77,5 @@
 - 每个重要模块放自己的 `AGENTS.md`，让更近的规则覆盖根规则。
 - `MEMORY.md` 作为业务索引，新增业务目录、入口类、协议类、自定义 View 时同步更新。
 - `AGENTS.md` 是唯一项目规则源，不要并行维护一份内容重复的 `CLAUDE.md`。
-- 截图还原、分支迁移、资源导入和自定义 View 是高风险任务，建议保留对应独立规则文件并在根规则中引用。
+- 截图还原、分支迁移、资源导入、自定义 View、录音 SDK/AAR、多语言同步和 R8 混淆是高风险任务，建议保留对应独立规则文件并在根规则中引用。
 - 如果目标项目已有规则，先合并用户偏好和项目约束，不要覆盖掉已有规则。

@@ -57,6 +57,9 @@
    - `image-resource-rules.md`
    - `custom-view-chart-rules.md`
    - `testing-build-rules.md`
+   - `recording-sdk-rules.md`
+   - `multilang-string-rules.md`
+   - `r8-proguard-rules.md`
 9. 替换所有占位符。
 10. 检查生成内容是否仍包含源项目名称、源包名、源 flavor 或无关业务。
 11. 普通手动导入以 `AGENTS.md` 为唯一完整规则源；插件导入时生成或合并 `CLAUDE.md` 薄入口，说明 Claude Code 读取 `AGENTS.md`，不复制完整项目规则。
@@ -72,6 +75,7 @@
 - CodeGraph 与 `rg` 的使用边界。
 - 截图/UI/图片资源规则入口。
 - commit/branch 迁移规则入口，明确使用 `$commit-migration`。
+- 录音 SDK/AAR、多语言文案和 R8/ProGuard 规则入口。
 - 测试与构建规则入口。
 - 修改边界和禁止项。
 - 明确 `AGENTS.md` 是唯一完整项目规则源，`CLAUDE.md` 只作为 Claude Code 薄入口。

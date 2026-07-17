@@ -44,6 +44,14 @@
 - 开发中只跑最小聚焦测试或静态检查；收尾再按用户计划跑最终验证。是否补跑 assemble 按影响范围决定，不把 assemble 机械作为每次局部逻辑改动的完成条件。
 - 收尾时先看 `git status --short`，只说明本次触碰文件和已有无关改动；不要为了整理工作区回滚或格式化用户未提交内容。
 
+## 耗时任务快速分流
+
+- Quick 模式：用户给出明确文件、函数、堆栈、日志行、资源 key 或具体改法时，只读目标片段和必要调用方，优先完成最小修复；验证用聚焦测试、受影响模块编译或静态差异检查。
+- Strict 模式：任务涉及跨仓库 SDK/AAR、BLE/协议、录音 Wi-Fi 导入、真机操作、权限发布链路、R8/minify 或多品牌迁移时，允许完整闭环；先明确边界、依赖产物、覆盖动作和验证链路，再执行。
+- Analysis-only 模式：用户要求“分析、列出、排查、给方案”且未要求落代码时，不写计划文件、不跑 Gradle、不改业务代码；只做必要只读检查并说明可验证证据。
+- 模糊大范围任务先压缩范围：先列候选模块、风险和最小验证口径；不要直接全仓扫描、全量重构或全量测试。
+- 跨仓库任务必须先说清当前目标仓库、外部仓库路径、是否需要覆盖本地 AAR/JAR、是否需要真机动作；没有明确授权时不安装 APK、不操作手机或设备。
+
 ## 文档分层边界
 
 - `AGENTS.md`：跨项目硬规则、工具路由、修改边界、验证矩阵、禁止事项。
@@ -63,6 +71,7 @@
 ## 项目速览
 
 - 这是一个多模块 Android 项目。
+- 根项目名：`<填写根项目名>`。
 - 当前启用模块：`<填写模块名>`。
 - 主应用主要代码位于 `<填写主包路径>`。
 - 项目包含 Kotlin、Java、XML、assets 和多语言资源。
@@ -96,6 +105,9 @@
 - 图片、图标、drawable、mipmap 资源任务：参考 `AGENTS/image-resource-rules.md`。
 - 自定义 View、Canvas、图表任务：参考 `AGENTS/custom-view-chart-rules.md`。
 - 迁移 commit、提交范围、其他分支或品牌分支功能：参考 `AGENTS/commit-migration-rules.md`，并使用 `$commit-migration` 技能。
+- 录音导入、Wi-Fi 录音、Sample/SDK/AAR 覆盖：参考 `AGENTS/recording-sdk-rules.md`。
+- 多语言文案、批量 `strings.xml` 同步：参考 `AGENTS/multilang-string-rules.md`。
+- 混淆、ProGuard、R8、missing class、keep 规则：参考 `AGENTS/r8-proguard-rules.md`，并使用 `$r8-analyzer` 技能。
 - 测试与构建验证：参考 `AGENTS/testing-build-rules.md`。
 
 ## 修改边界

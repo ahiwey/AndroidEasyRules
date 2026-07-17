@@ -18,8 +18,16 @@
    - `git log <ref> -- <path>`
 5. 做 Android-aware mapping，再编辑当前分支。
 6. 检查 Android follow-up。
-7. 运行对应构建/测试。
+7. 按用户要求运行对应构建/测试；未要求时用静态差异核对替代。
 8. 总结迁移范围、适配差异、未迁移原因和残留风险。
+
+## 迁移前 5 分钟产物
+
+- 源选择：记录 commit、range、branch diff 或 recent N，不接受 `459591xx` 这类模糊占位符。
+- 目标确认：记录当前仓库、当前分支、目标模块和是否只改当前分支。
+- 候选文件：先用 `git diff --name-only`、`git show --name-only` 或等价只读命令列出源改动文件，再分类读取。
+- 明确排除项：列出不会迁移的品牌资源、会议转写、隐私协议、keystore、包名、无关 assets 或其他非目标逻辑。
+- 验证命令：迁移前先写出最小验证口径，例如聚焦测试、受影响模块 assemble、资源编译或静态 diff check。
 
 ## 映射顺序
 
@@ -50,7 +58,15 @@
 
 - 保留目标分支的命名、目录结构、资源风格和分支特定业务逻辑。
 - 不要复制其他品牌的 keystore、`google-services.json`、包名、隐私链接、协议 HTML、无关 assets、随机生成页面或未被目标功能使用的资源。
+- 不要迁移与用户目标无关的会议转写、AI、H5 dist、SDK key、通知渠道、发布配置或品牌视觉。
 - 目标不是原样 replay patch，而是把源行为等价迁移到当前分支结构中。
+
+## 多 commit / 分支 diff 规则
+
+- 多 commit 先按文件路径分类，再按行为聚合；不要逐个 commit 机械 replay。
+- 先迁移公共模型、协议、资源和入口，再迁移调用点，最后检查 manifest、layout、R8 和文档。
+- 源分支和目标分支结构差异大时，优先找同职责类和现有工具 API，不新增平行实现。
+- 发现源提交互相覆盖或目标已有等价实现时，保留目标实现并说明适配差异。
 
 ## 完成前检查
 
@@ -64,4 +80,3 @@
 - route paths or keys
 - serialization model names
 - ProGuard / R8 rules
-

@@ -23,6 +23,9 @@
 | 截图还原、图标替换、图片资源、视觉样式 | `app/AGENTS.md` + `AGENTS/screenshot-ui-rules.md` | `res/mipmap*`、`res/drawable`、目标 layout |
 | 自定义 View、健康图表、Canvas 绘制 | `AGENTS/custom-view-chart-rules.md` | 自定义 View 目录 |
 | 迁移 commit、提交范围、其他分支页面/功能 | `$commit-migration` + `AGENTS/commit-migration-rules.md` | `git show <ref>:<path>`、`git diff <source>...HEAD -- <path>` |
+| 录音导入、Wi-Fi 录音、Sample 项目、SDK 项目、AAR 覆盖 | `AGENTS/recording-sdk-rules.md` | 录音页面、Wi-Fi 导入目录、外部 Sample/SDK 仓库 |
+| 多语言文案、批量 `strings.xml`、权限说明翻译 | `AGENTS/multilang-string-rules.md` | `res/values*` |
+| 混淆、R8、ProGuard、keep 规则、missing class | `$r8-analyzer` + `AGENTS/r8-proguard-rules.md` | `proguard-rules.pro`、`build.gradle`、`gradle.properties`、consumer rules |
 | 页面、Fragment、Activity、UI 文案、布局 | `app/AGENTS.md` | app UI 目录、`res/layout`、`res/values*` |
 | 网络请求、签名、API、Repository | `app/AGENTS.md` | API/Repository/DI 目录 |
 | 权限、通知、广播、后台保活 | `app/AGENTS.md` | permission/receiver/util/manifest |

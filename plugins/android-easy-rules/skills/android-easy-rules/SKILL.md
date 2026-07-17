@@ -43,7 +43,7 @@ Use `--dry-run` first when the target already has substantial rules files, when 
    - `AGENTS.md` is the canonical full Codex/AI rule source.
    - `CLAUDE.md` is a thin Claude Code entrypoint pointing to `AGENTS.md`.
    - `MEMORY.md` is a project index and must not contain source-project business details.
-   - `AGENTS/` contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, and commit migration.
+   - `AGENTS/` contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, commit migration, recording SDK/AAR flows, multilang strings, and R8/ProGuard.
 
 6. If the importer cannot infer a detail, replace placeholders conservatively:
    - module list
