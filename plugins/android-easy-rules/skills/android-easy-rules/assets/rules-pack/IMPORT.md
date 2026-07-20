@@ -7,7 +7,7 @@
 当用户在其他项目里说以下类似请求时，按本协议执行：
 
 - “导入这个目录的规则”
-- “导入 `E:\工作相关\Ai相关\AGENTS`”
+- “导入 `<规则包路径>`”
 - “使用这套 AGENTS 规则模板”
 - “把这个 AGENTS 规则包应用到当前项目”
 - “导入 AndroidEasyRules 插件”
@@ -63,9 +63,11 @@
    - `testing-build-rules.md`
    - `recording-sdk-rules.md`
    - `multilang-string-rules.md`
+   - `android-platform-integration-rules.md`
+   - `neat-freak-rules.md`
    - `r8-proguard-rules.md`
 10. 替换所有占位符。
-11. 检查生成内容是否仍包含源项目名称、源包名、源 flavor、缓存路径或无关业务。
+11. 检查生成内容是否仍包含源项目名称、源包名、源 flavor、真实本地缓存路径或无关业务；`%USERPROFILE%` 这类泛化变量可用于 GitHub 更新说明。
 12. 普通手动导入以 `AGENTS.md` 为唯一完整规则源；插件导入时生成或合并 `CLAUDE.md` 薄入口，说明 Claude Code 读取 `AGENTS.md`，不复制完整项目规则。
 13. 最终说明生成了哪些文件、哪些规则来自已有项目、哪些需要用户确认。
 
@@ -79,7 +81,8 @@
 - CodeGraph 与 `rg` 的使用边界。
 - 截图/UI/图片资源规则入口。
 - commit/branch 迁移规则入口，明确使用 `$commit-migration`。
-- 录音 SDK/AAR、多语言文案和 R8/ProGuard 规则入口。
+- 录音 SDK/AAR、多语言文案、平台集成和 R8/ProGuard 规则入口。
+- 洁癖/知识收尾规则入口，明确规则同步不等于自动清场。
 - 测试与构建规则入口。
 - 修改边界和禁止项。
 - 明确 `AGENTS.md` 是唯一完整项目规则源，`CLAUDE.md` 只作为 Claude Code 薄入口。
@@ -161,6 +164,23 @@
 
 不要保留不存在的 flavor 或模块名。
 
+## Android 平台集成规则要求
+
+必须导入 `android-platform-integration-rules.md`，并在根 `AGENTS.md` 中写明：
+
+- 权限、通知、后台任务、WebView/JSBridge、Health Connect、Firebase、地图、签名发布和 manifest 合并任务先参考该规则。
+- importer 可从 Gradle、manifest、assets 和常见依赖关键词推断平台集成信号，但不能据此自动改依赖、签名、密钥或发布配置。
+- 平台配置类改动必须优先说明影响范围和最小验证；规则/文档改动只做脚本和 dry-run 验证，不默认跑 Gradle。
+
+## 洁癖收尾规则要求
+
+必须导入 `neat-freak-rules.md`，并在根 `AGENTS.md` 中写明：
+
+- 用户要求 `neat-freak`、`洁癖`、知识收尾、规则同步、文档同步或 workspace 残留审计时，参考该规则。
+- 文档/规则同步只处理当前任务授权范围，不默认扩大到整个 workspace。
+- 删除分支、worktree、临时库、中间产物、旧副本或调试脚本前，必须先汇报候选，等待用户看完结果后再次明确确认。
+- `neat-freak-rules.md` 融合自 `https://github.com/KKKKhazix/khazix-skills/tree/main/neat-freak`，按 MIT License 来源说明保留引用；不要把外部 scripts/evals 作为目标项目依赖。
+
 ## 禁止项
 
 - 不要机械复制源项目的 `MEMORY.md`。
@@ -178,3 +198,5 @@
 - 已替换的项目专属信息，例如包名、flavor、构建命令。
 - 没有生成某些模块规则的原因。
 - 是否需要用户补充业务索引或确认构建命令。
+
+规则包维护者还应从技能目录运行 `python scripts/validate_android_easy_rules.py`；导入验证可使用技能目录下的 `scripts/import_android_easy_rules.py <target> --dry-run --strict`，让缺失规则或未替换占位符直接失败。

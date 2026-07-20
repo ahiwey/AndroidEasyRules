@@ -25,13 +25,15 @@ Use this skill to install the bundled Android rules pack, or a compatible extern
    - `settings.gradle` or `settings.gradle.kts`
    - root and app `build.gradle` / `build.gradle.kts`
    - existing `AGENTS.md`, `CLAUDE.md`, `MEMORY.md`, and module `AGENTS.md`
-   - obvious app, BLE, ChatKit, skin/theme, WebView, resource, and test directories
+   - obvious app, BLE, ChatKit, skin/theme, WebView/assets, Firebase, Health Connect, maps, background task, permission/notification, resource, and test directories
 
 4. Run the bundled importer:
 
 ```bash
 python scripts/import_android_easy_rules.py <target-project-root>
 ```
+
+Use `--strict` when validating the bundled pack or when an external pack must fail on missing rules or unfilled generated placeholders.
 
 For an external rules pack:
 
@@ -45,7 +47,7 @@ Use `--dry-run` first when the target already has substantial rules files, when 
    - `AGENTS.md` is the canonical full Codex/AI rule source.
    - `CLAUDE.md` is a thin Claude Code entrypoint pointing to `AGENTS.md`.
    - `MEMORY.md` is a project index and must not contain source-project business details.
-   - `AGENTS/` contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, commit migration, recording SDK/AAR flows, multilang strings, and R8/ProGuard.
+   - `AGENTS/` contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, commit migration, recording SDK/AAR flows, multilang strings, Android platform integration, neat-freak knowledge closeout, and R8/ProGuard.
 
 6. If the importer cannot infer a detail, replace placeholders conservatively:
    - module list
@@ -64,8 +66,9 @@ Use `--dry-run` first when the target already has substantial rules files, when 
 
 ## Bundled Resources
 
-- `assets/rules-pack/`: Android rules templates and focused rule files, including Chinese Karpathy behavior guidelines.
+- `assets/rules-pack/`: Android rules templates and focused rule files, including Chinese Karpathy behavior guidelines, Android platform integration rules, and neat-freak knowledge closeout rules adapted from `KKKKhazix/khazix-skills/neat-freak` under MIT License.
 - `scripts/import_android_easy_rules.py`: conservative importer for AGENTS, CLAUDE, MEMORY, and `AGENTS/` rule files.
+- `scripts/validate_android_easy_rules.py`: standard-library self-check for pack completeness, UTF-8, source leakage, detection routes, and idempotent fixture import.
 
 ## Validation
 
@@ -73,5 +76,12 @@ After importing into a target project:
 
 - Read `AGENTS.md`, `CLAUDE.md`, and `MEMORY.md` as UTF-8.
 - Confirm `CLAUDE.md` points to `AGENTS.md` and does not duplicate the full rules.
-- Confirm generated rules do not mention source-project-specific package names, flavors, branches, cache paths, or business names.
+- Confirm generated rules do not mention source-project-specific package names, flavors, branches, concrete local cache paths, or business names; generic variables such as `%USERPROFILE%` are allowed for the GitHub update flow.
 - Do not run Android Gradle for rules-only imports unless the user asks or the import also changes Android code/resources.
+
+For a rules-only change, run:
+
+```bash
+python scripts/validate_android_easy_rules.py
+python scripts/import_android_easy_rules.py <target-project-root> --dry-run --strict
+```

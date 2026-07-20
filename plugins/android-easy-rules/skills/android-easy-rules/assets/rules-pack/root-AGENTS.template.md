@@ -14,7 +14,7 @@
 - 当用户明确要求“更新 AndroidEasyRules”“导入最新版规则”或点名 `ahiwey/AndroidEasyRules` 时，再从 GitHub 拉取最新版并导入当前项目。
 - 推荐缓存目录为 `%USERPROFILE%\.codex\cache\AndroidEasyRules`；如目录已存在，运行 `rtk git -C "%USERPROFILE%\.codex\cache\AndroidEasyRules" pull --ff-only`，否则运行 `rtk git clone https://github.com/ahiwey/AndroidEasyRules.git "%USERPROFILE%\.codex\cache\AndroidEasyRules"`。
 - 拉取后运行 `rtk python "%USERPROFILE%\.codex\cache\AndroidEasyRules\plugins\android-easy-rules\skills\android-easy-rules\scripts\import_android_easy_rules.py" <当前项目根目录>`。
-- 导入后至少检查 `AGENTS.md`、`CLAUDE.md`、`MEMORY.md` 和 `app/AGENTS.md` 可用 UTF-8 读取，并确认没有 `<填写...>` 占位符或源规则仓库路径残留。
+- 导入后至少检查 `AGENTS.md`、`CLAUDE.md`、`MEMORY.md` 和 app 模块规则可用 UTF-8 读取，并确认没有未替换的模板占位符或源规则仓库路径残留。
 
 ## 协作偏好
 
@@ -51,6 +51,7 @@
 - 明确修复计划任务中，CodeGraph 最多优先用一次 `codegraph_context` 或必要的结构查询确认调用链；如果计划已经定位到具体文件和函数，可直接读取目标片段。定位完成后，不再用宽泛 `rg` 重复搜索同一批符号。
 - 开发中只跑最小聚焦测试或静态检查；收尾再按用户计划跑最终验证。是否补跑 assemble 按影响范围决定，不把 assemble 机械作为每次局部逻辑改动的完成条件。
 - 收尾时先看 `git status --short`，只说明本次触碰文件和已有无关改动；不要为了整理工作区回滚或格式化用户未提交内容。
+- 用户要求“洁癖”、`neat-freak`、知识收尾、规则同步、文档同步或 workspace 残留审计时，按 `AGENTS/neat-freak-rules.md` 执行；规则/文档同步不等于自动清场，删除分支、worktree、临时库或中间产物必须先汇报候选并等待用户二次确认。
 
 ## 耗时任务快速分流
 
@@ -89,10 +90,7 @@
 | 任务类型 | 优先读取 |
 | --- | --- |
 | 任意业务定位 | `MEMORY.md` |
-| 主应用 UI、页面、网络、ViewModel、资源 | `app/AGENTS.md` |
-| BLE、设备协议、连接、同步、OTA | `Lib_SDK_BLE/AGENTS.md` |
-| 聊天消息列表、输入框、Chat UI | `ringchatkit/AGENTS.md` |
-| 皮肤兼容、主题模块 | 对应模块 `AGENTS.md` |
+<填写上下文路由>
 | 符号定义、调用链、影响范围 | CodeGraph |
 | 字符串、资源名、日志、注释、固定文本 | `rg` |
 
@@ -115,6 +113,8 @@
 - 迁移 commit、提交范围、其他分支或品牌分支功能：参考 `AGENTS/commit-migration-rules.md`，并使用 `$commit-migration` 技能。
 - 录音导入、Wi-Fi 录音、Sample/SDK/AAR 覆盖：参考 `AGENTS/recording-sdk-rules.md`。
 - 多语言文案、批量 `strings.xml` 同步：参考 `AGENTS/multilang-string-rules.md`。
+- 权限、通知、后台任务、WebView/JSBridge、Health Connect、Firebase、地图、签名发布、manifest 合并：参考 `AGENTS/android-platform-integration-rules.md`。
+- 洁癖、知识收尾、规则同步、文档同步、workspace 残留审计：参考 `AGENTS/neat-freak-rules.md`。
 - 混淆、ProGuard、R8、missing class、keep 规则：参考 `AGENTS/r8-proguard-rules.md`，并使用 `$r8-analyzer` 技能。
 - 测试与构建验证：参考 `AGENTS/testing-build-rules.md`。
 

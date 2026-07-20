@@ -28,7 +28,7 @@
 | 混淆、R8、ProGuard、keep 规则、missing class | `$r8-analyzer` + `AGENTS/r8-proguard-rules.md` | `proguard-rules.pro`、`build.gradle`、`gradle.properties`、consumer rules |
 | 页面、Fragment、Activity、UI 文案、布局 | `app/AGENTS.md` | app UI 目录、`res/layout`、`res/values*` |
 | 网络请求、签名、API、Repository | `app/AGENTS.md` | API/Repository/DI 目录 |
-| 权限、通知、广播、后台保活 | `app/AGENTS.md` | permission/receiver/util/manifest |
+| 权限、通知、广播、后台任务、WebView/JSBridge、Health Connect、Firebase、地图、签名发布 | `AGENTS/android-platform-integration-rules.md` | manifest、app 入口类、Gradle、配置文件 |
 
 ## 模块索引
 
@@ -37,7 +37,7 @@
 | `<app>` | 主 Android 应用 | `app/AGENTS.md` | XML + ViewBinding，Kotlin/Java 混合 |
 | `<library>` | 库模块 | `<library>/AGENTS.md` | 保持模块职责 |
 
-## 业务索引
+## 目录索引
 
 | 目录/文件 | 内容 |
 | --- | --- |

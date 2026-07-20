@@ -40,7 +40,7 @@
 ## 业务风险点
 
 - BLE、设备同步、OTA、表盘、文件传输等逻辑通常跨 app 和 SDK 模块，修改前先追踪调用链。
-- 权限、通知、广播、后台任务、Health Connect、Google Fit、地图定位逻辑要注意 Android 版本兼容。
+- 权限、通知、广播、后台任务、WebView/JSBridge、Health Connect、Firebase、地图定位、签名发布和 manifest 合并遵循 `AGENTS/android-platform-integration-rules.md`。
 - WebView/JSBridge 改动要同时考虑 Java/Kotlin bridge、assets 脚本和 H5 调用约定。
 - 网络请求优先沿用现有 API client、Repository、Response/Result 包装和签名拦截逻辑。
 

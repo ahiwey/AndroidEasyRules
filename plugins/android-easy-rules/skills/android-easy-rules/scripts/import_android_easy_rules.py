@@ -12,6 +12,33 @@ from pathlib import Path
 MARKER_START = "<!-- ANDROID_EASY_RULES_START -->"
 MARKER_END = "<!-- ANDROID_EASY_RULES_END -->"
 
+RULE_FILES = [
+    "karpathy-guidelines.md",
+    "commit-migration-rules.md",
+    "screenshot-ui-rules.md",
+    "image-resource-rules.md",
+    "custom-view-chart-rules.md",
+    "testing-build-rules.md",
+    "recording-sdk-rules.md",
+    "multilang-string-rules.md",
+    "android-platform-integration-rules.md",
+    "neat-freak-rules.md",
+    "r8-proguard-rules.md",
+]
+
+PLACEHOLDER_PATTERNS = (
+    "<填写主",
+    "<填写 app",
+    "<填写模块",
+    "<填写目录>",
+    "<填写业务说明>",
+    "<填写上下文路由>",
+    "<填写根项目名>",
+    "`<app>`",
+    "`<library>`",
+)
+UNFILLED_PLACEHOLDER_RE = re.compile(r"<填写(?!\.\.\.)[^>\r\n]*>")
+
 
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
@@ -28,7 +55,8 @@ def write_text(path: Path, text: str, dry_run: bool) -> None:
 
 def merge_marked_file(path: Path, generated: str, section: str, dry_run: bool) -> None:
     if not path.exists():
-        write_text(path, generated.rstrip() + "\n", dry_run)
+        marked = f"{MARKER_START}\n{section.rstrip()}\n{MARKER_END}"
+        write_text(path, generated.rstrip() + "\n\n" + marked + "\n", dry_run)
         return
 
     original = read_text(path)
@@ -78,9 +106,18 @@ def detect_app_module(project: Path, modules: list[str]) -> str | None:
         for build_file in build_files:
             if build_file.exists():
                 content = read_text(build_file)
-                if "com.android.application" in content:
+                if is_application_module(content):
                     return module
     return "app" if (project / "app").exists() else None
+
+
+def is_application_module(content: str) -> bool:
+    lowered = content.lower()
+    if "com.android.application" in lowered:
+        return True
+    if re.search(r"libs\.plugins\.[a-z0-9_.-]*(?:android[.-])?application\b", lowered):
+        return True
+    return bool(re.search(r"\bapplicationid\s*(?:=|\s)\s*['\"]", lowered))
 
 
 def detect_modules_by_keywords(modules: list[str], keywords: tuple[str, ...], exclude: str | None = None) -> list[str]:
@@ -133,15 +170,17 @@ def detect_first_flavor(content: str) -> str | None:
     if not block_match:
         return None
     body = block_match.group("body")
+    factory_match = re.search(
+        r"\b(?:create|register)\s*\(\s*['\"]([^'\"]+)['\"]\s*\)", body
+    )
+    if factory_match:
+        return factory_match.group(1)
     for line in body.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("//"):
             continue
         match = re.match(r"([A-Za-z_][A-Za-z0-9_]*)\s*(?:\{|$)", stripped)
         if match and match.group(1) not in {"create", "register"}:
-            return match.group(1)
-        match = re.match(r"(?:create|register)\(['\"]([^'\"]+)['\"]\)", stripped)
-        if match:
             return match.group(1)
     return None
 
@@ -153,16 +192,64 @@ def capitalize_task_part(value: str) -> str:
 def detect_source_root(project: Path, app_module: str | None, namespace: str | None) -> str:
     if not app_module:
         return "<填写主包路径>"
-    src_root = module_dir(project, app_module) / "src" / "main" / "java"
+    source_roots = [
+        module_dir(project, app_module) / "src" / "main" / "java",
+        module_dir(project, app_module) / "src" / "main" / "kotlin",
+    ]
     if namespace:
-        namespace_path = src_root.joinpath(*namespace.split("."))
-        if namespace_path.exists():
-            return namespace_path.relative_to(project).as_posix()
-    if src_root.exists():
-        java_files = sorted(list(src_root.rglob("*.kt")) + list(src_root.rglob("*.java")))
-        if java_files:
-            return java_files[0].parent.relative_to(project).as_posix()
+        for src_root in source_roots:
+            namespace_path = src_root.joinpath(*namespace.split("."))
+            if namespace_path.exists():
+                return namespace_path.relative_to(project).as_posix()
+    for src_root in source_roots:
+        if src_root.exists():
+            source_files = sorted(list(src_root.rglob("*.kt")) + list(src_root.rglob("*.java")))
+            if source_files:
+                return source_files[0].parent.relative_to(project).as_posix()
+            return src_root.relative_to(project).as_posix()
     return "<填写主包路径>"
+
+
+def read_project_signal_text(project: Path, app_module: str | None) -> str:
+    candidates = [
+        project / "settings.gradle",
+        project / "settings.gradle.kts",
+        project / "build.gradle",
+        project / "build.gradle.kts",
+        project / "gradle.properties",
+    ]
+    if app_module:
+        app_dir = module_dir(project, app_module)
+        candidates.extend(
+            [
+                app_dir / "build.gradle",
+                app_dir / "build.gradle.kts",
+                app_dir / "src" / "main" / "AndroidManifest.xml",
+            ]
+        )
+    parts: list[str] = []
+    for path in candidates:
+        if path.exists():
+            parts.append(read_text(path))
+    return "\n".join(parts)
+
+
+def detect_capability_flags(project: Path, app_module: str | None) -> dict[str, bool]:
+    text = read_project_signal_text(project, app_module)
+    lowered = text.lower()
+    app_dir = module_dir(project, app_module) if app_module else project
+    return {
+        "compose": any(token in lowered for token in ("androidx.compose", "composeoptions", "kotlin.plugin.compose")),
+        "navigation": "androidx.navigation" in lowered,
+        "room": "androidx.room" in lowered or "room-runtime" in lowered,
+        "webview": "webview" in lowered or "jsbridge" in lowered or (app_dir / "src" / "main" / "assets").exists(),
+        "firebase": "firebase" in lowered or "google-services" in lowered,
+        "health": "health.connect" in lowered or "health connect" in lowered or "google fit" in lowered,
+        "maps": any(token in lowered for token in ("maps", "amap", "baidu", "gaode")),
+        "background": any(token in lowered for token in ("androidx.work", "workmanager", "<service", "<receiver")),
+        "notifications": "notification" in lowered or "post_notifications" in lowered,
+        "permissions": "uses-permission" in lowered or "requestpermissions" in lowered,
+    }
 
 
 def classify_module(project: Path, module: str, app_module: str | None) -> tuple[str, str, str, str | None]:
@@ -238,7 +325,7 @@ def build_memory_directory_rows(project: Path, modules: list[str], app_module: s
     return "\n".join(rows)
 
 
-def build_context_routes(modules: list[str], app_module: str | None) -> str:
+def build_context_routes(modules: list[str], app_module: str | None, capability_flags: dict[str, bool]) -> str:
     rows: list[str] = []
     if app_module:
         rows.append(f"| 主应用 UI、页面、网络、ViewModel、资源 | `{module_agents_path(app_module)}` |")
@@ -256,12 +343,36 @@ def build_context_routes(modules: list[str], app_module: str | None) -> str:
             targets = "、".join(f"`{module_agents_path(module)}`" for module in matched)
             rows.append(f"| {label} | {targets} |")
 
+    platform_topics = []
+    if capability_flags.get("compose"):
+        platform_topics.append("Compose")
+    if capability_flags.get("navigation"):
+        platform_topics.append("Navigation")
+    if capability_flags.get("room"):
+        platform_topics.append("Room")
+    for flag, label in (
+        ("permissions", "权限"),
+        ("notifications", "通知"),
+        ("background", "后台任务"),
+        ("webview", "WebView/JSBridge/assets"),
+        ("health", "Health Connect/健康数据"),
+        ("firebase", "Firebase"),
+        ("maps", "地图/定位"),
+    ):
+        if capability_flags.get(flag):
+            platform_topics.append(label)
+    if platform_topics:
+        rows.append(f"| {'、'.join(platform_topics)} | `AGENTS/android-platform-integration-rules.md` |")
+    else:
+        rows.append("| 权限、通知、后台、WebView/JSBridge、Health Connect、Firebase、地图、签名发布 | `AGENTS/android-platform-integration-rules.md` |")
+
     return "\n".join(rows)
 
 
 def detect_android_values(project: Path, app_module: str | None) -> dict[str, str]:
     modules = detect_modules(project)
     app_build = read_module_build_file(project, app_module)
+    capability_flags = detect_capability_flags(project, app_module)
     namespace = detect_gradle_string(app_build, "namespace")
     application_id = detect_gradle_string(app_build, "applicationId")
     flavor = detect_first_flavor(app_build)
@@ -283,7 +394,7 @@ def detect_android_values(project: Path, app_module: str | None) -> dict[str, st
         "app_agents_path": app_agents_path,
         "main_package_path": main_package_path,
         "app_identity_line": app_identity_line,
-        "context_routes": build_context_routes(modules, app_module),
+        "context_routes": build_context_routes(modules, app_module, capability_flags),
         "assemble_task": ".\\gradlew.bat :app:assembleDebug",
         "unit_test_task": ".\\gradlew.bat :app:testDebugUnitTest",
         "connected_test_task": ".\\gradlew.bat :app:connectedDebugAndroidTest",
@@ -388,21 +499,10 @@ Claude Code should:
 
 
 def copy_rule_files(rules_pack: Path, target: Path, dry_run: bool) -> None:
-    files = [
-        "karpathy-guidelines.md",
-        "commit-migration-rules.md",
-        "screenshot-ui-rules.md",
-        "image-resource-rules.md",
-        "custom-view-chart-rules.md",
-        "testing-build-rules.md",
-        "recording-sdk-rules.md",
-        "multilang-string-rules.md",
-        "r8-proguard-rules.md",
-    ]
     agents_dir = target / "AGENTS"
     if not dry_run:
         agents_dir.mkdir(parents=True, exist_ok=True)
-    for name in files:
+    for name in RULE_FILES:
         src = rules_pack / name
         dst = agents_dir / name
         if not src.exists():
@@ -443,20 +543,79 @@ def copy_module_rules(
             merge_marked_file(dst, generated, generated_agents_section(), dry_run)
 
 
-def import_rules(target: Path, rules_pack: Path, dry_run: bool) -> None:
+def warn_if_generated_text_has_issues(label: str, text: str, rules_pack: Path) -> list[str]:
+    issues: list[str] = []
+    if UNFILLED_PLACEHOLDER_RE.search(text):
+        issues.append(f"{label} still contains an unfilled placeholder")
+    for pattern in PLACEHOLDER_PATTERNS:
+        if pattern in text:
+            issues.append(f"{label} still contains placeholder pattern: {pattern}")
+
+    real_paths = {
+        str(rules_pack),
+        str(rules_pack).replace("\\", "/"),
+        str(rules_pack.parents[3]) if len(rules_pack.parents) > 3 else "",
+        str(rules_pack.parents[3]).replace("\\", "/") if len(rules_pack.parents) > 3 else "",
+    }
+    for real_path in sorted(path for path in real_paths if path):
+        if real_path in text:
+            issues.append(f"{label} contains local AndroidEasyRules source path: {real_path}")
+    for issue in issues:
+        print(f"[warning] {issue}")
+    return issues
+
+
+def validate_generated_texts(
+    rules_pack: Path,
+    values: dict[str, str],
+    root_text: str,
+    memory_text: str,
+    strict: bool = False,
+) -> None:
+    texts = {
+        "AGENTS.md": root_text,
+        "MEMORY.md": memory_text,
+        "CLAUDE.md": claude_entry(),
+    }
+    app_template = rules_pack / "android-app-AGENTS.template.md"
+    if app_template.exists():
+        texts["app/AGENTS.md"] = fill_template(read_text(app_template), values)
+    for name in RULE_FILES:
+        rule_file = rules_pack / name
+        if rule_file.exists():
+            texts[f"AGENTS/{name}"] = read_text(rule_file)
+
+    issues = [
+        issue
+        for label, text in texts.items()
+        for issue in warn_if_generated_text_has_issues(label, text, rules_pack)
+    ]
+    if strict and issues:
+        raise ValueError("Generated rules contain unsafe leftovers: " + "; ".join(issues))
+
+
+def import_rules(target: Path, rules_pack: Path, dry_run: bool, strict: bool = False) -> None:
     modules = detect_modules(target)
     app_module = detect_app_module(target, modules)
     values = detect_android_values(target, app_module)
 
     root_template = fill_template(read_text(rules_pack / "root-AGENTS.template.md"), values)
     memory_template = fill_template(read_text(rules_pack / "MEMORY.template.md"), values)
+    validate_generated_texts(rules_pack, values, root_template, memory_template, strict=strict)
 
     merge_marked_file(target / "AGENTS.md", root_template, generated_root_section(values), dry_run)
-    merge_marked_file(target / "CLAUDE.md", claude_entry(), claude_entry(), dry_run)
-    if not (target / "MEMORY.md").exists():
-        write_text(target / "MEMORY.md", memory_template.rstrip() + "\n", dry_run)
-    else:
-        merge_marked_file(target / "MEMORY.md", memory_template, generated_memory_section(values), dry_run)
+    claude_path = target / "CLAUDE.md"
+    if not claude_path.exists():
+        write_text(claude_path, claude_entry(), dry_run)
+    elif read_text(claude_path).strip() != claude_entry().strip():
+        merge_marked_file(claude_path, claude_entry(), claude_entry(), dry_run)
+    merge_marked_file(target / "MEMORY.md", memory_template, generated_memory_section(values), dry_run)
+    missing_rules = [name for name in RULE_FILES if not (rules_pack / name).exists()]
+    if missing_rules:
+        message = "Rules pack is missing: " + ", ".join(missing_rules)
+        if strict:
+            raise FileNotFoundError(message)
+        print(f"[warning] {message}")
     copy_rule_files(rules_pack, target, dry_run)
     copy_module_rules(rules_pack, target, app_module, values, dry_run)
 
@@ -476,6 +635,11 @@ def main() -> int:
         help="Path to the AndroidEasyRules rules pack.",
     )
     parser.add_argument("--dry-run", action="store_true", help="Print actions without writing files.")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail on missing bundled rules or unfilled generated placeholders.",
+    )
     args = parser.parse_args()
 
     target = args.target.resolve()
@@ -484,7 +648,7 @@ def main() -> int:
         raise SystemExit(f"Target does not exist: {target}")
     if not rules_pack.exists():
         raise SystemExit(f"Rules pack does not exist: {rules_pack}")
-    import_rules(target, rules_pack, args.dry_run)
+    import_rules(target, rules_pack, args.dry_run, strict=args.strict)
     return 0
 
 

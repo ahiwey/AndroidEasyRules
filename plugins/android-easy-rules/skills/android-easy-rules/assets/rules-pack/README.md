@@ -15,7 +15,7 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 在其他项目中，可以直接对 Codex 说：
 
 ```text
-请导入 E:\工作相关\Ai相关\AGENTS 里的规则，并按当前项目结构适配生成 AGENTS.md、MEMORY.md 和模块 AGENTS.md。
+请导入 `<规则包路径>` 里的规则，并按当前项目结构适配生成 `AGENTS.md`、`MEMORY.md` 和模块 `AGENTS.md`。
 ```
 
 如果路径不同，把上面的目录替换成实际规则包目录即可。
@@ -39,6 +39,7 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 - 资源目录和资源风格
 - 主要业务目录
 - 是否有 BLE、Chat、skin-support、SDK、本地 AAR/JAR 等模块
+- 是否有 Compose、Navigation、Room、WebView/assets、Firebase、Health Connect、地图、后台任务、权限/通知等平台集成信号
 - 是否已有 AGENTS.md、MEMORY.md 或其他项目规则
 
 不要把源项目的业务索引、包名、品牌资源、构建命令或分支记忆原样复制到其他项目。
@@ -66,6 +67,7 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 | `android-app-AGENTS.template.md` | Android app 模块规则，适合 XML/ViewBinding/Kotlin/Java 混合项目 |
 | `MEMORY.template.md` | 项目索引模板，用来减少全量扫描和提升业务定位效率 |
 | `IMPORT.md` | 导入流程和适配规则，AI 或插件 skill 必须先读 |
+| 技能目录 `scripts/validate_android_easy_rules.py` | 规则包完整性、UTF-8、来源污染、识别路由和幂等导入自检 |
 | `commit-migration-rules.md` | 从其他提交/分支/品牌分支迁移代码的最佳实践 |
 | `screenshot-ui-rules.md` | 截图/效果图/UI 设计图驱动开发的最佳实践 |
 | `image-resource-rules.md` | Android 图片、图标、drawable、mipmap 资源规则 |
@@ -73,6 +75,8 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 | `testing-build-rules.md` | Android 测试与构建验证规则 |
 | `recording-sdk-rules.md` | 录音导入、Wi-Fi 传输、跨 SDK/Sample/AAR 覆盖规则 |
 | `multilang-string-rules.md` | 多语言 `strings.xml` 批量同步、品牌词替换和验证规则 |
+| `android-platform-integration-rules.md` | 权限、通知、后台、WebView/JSBridge、Health Connect、Firebase、地图、签名发布和 manifest 合并规则 |
+| `neat-freak-rules.md` | 洁癖/知识收尾规则，融合自 `KKKKhazix/khazix-skills/neat-freak`，用于文档、规则、记忆和工作区残留审计 |
 | `r8-proguard-rules.md` | R8/ProGuard/missing class/keep 规则分析与修改边界 |
 | `library-module-AGENTS.template.md` | 通用 Android library 模块规则 |
 | `ble-module-AGENTS.template.md` | BLE/设备协议模块规则 |
@@ -86,5 +90,7 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 - 每个重要模块放自己的 `AGENTS.md`，让更近的规则覆盖根规则。
 - `MEMORY.md` 作为业务索引，新增业务目录、入口类、协议类、自定义 View 时同步更新。
 - `AGENTS.md` 是唯一项目规则源，不要并行维护一份内容重复的 `CLAUDE.md`。
-- 截图还原、分支迁移、资源导入、自定义 View、录音 SDK/AAR、多语言同步和 R8 混淆是高风险任务，建议保留对应独立规则文件并在根规则中引用。
+- 截图还原、分支迁移、资源导入、自定义 View、录音 SDK/AAR、多语言同步、平台集成、洁癖收尾和 R8 混淆是高风险任务，建议保留对应独立规则文件并在根规则中引用。
+- `neat-freak-rules.md` 只融合知识治理思想，不引入外部脚本、evals 或打开项目时的自动审计；来源项目采用 MIT License。
+- 规则包修改后从技能目录运行 `python scripts/validate_android_easy_rules.py`；目标项目导入前可用 importer 的 `--dry-run --strict` 检查缺失规则和未替换占位符。
 - 如果目标项目已有规则，先合并用户偏好和项目约束，不要覆盖掉已有规则。
