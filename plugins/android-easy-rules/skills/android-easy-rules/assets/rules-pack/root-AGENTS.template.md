@@ -45,6 +45,7 @@
 - CodeGraph 用于结构定位后，不再用宽泛 `rg` 重复查同一批符号；`rg` 只补查固定字符串、资源名、layout id、文案、日志和注释。需要补查时先限定目录和关键词。
 - 外部命令优先用 `rtk` 包装以减少输出噪音，例如 `rtk git status`、`rtk rg "keyword"`、`rtk .\gradlew.bat :app:assembleDebug`。
 - 读取 PowerShell 内置命令时按 RTK 约定使用 `rtk powershell -NoProfile -Command "..."`；可执行文件和脚本使用 `rtk <exe> ...`。不要先尝试 `rtk Get-Content`、`rtk Get-ChildItem` 等无法直接解析的 cmdlet。
+- 运行 Gradle 前必须确认目标模块真实存在的 task 名；优先使用本文件、模块 `AGENTS.md` 或 `MEMORY.md` 已记录的命令，若出现 `Task not found`、flavor/buildType 变化或命令不确定，先读 `settings.gradle*` 与目标模块 `build.gradle*`，必要时运行 `rtk .\gradlew.bat :<module>:tasks --all` 枚举后再选择。
 - Android 单测过滤优先使用通配形式，例如 `.\gradlew.bat :app:test<Flavor>DebugUnitTest --tests '*TargetTest*'`，避免 flavor 变体下精确类名过滤发现失败。
 - 可隔离逻辑改动优先新增小而准的纯单元测试；如果现有架构导致 Repository、Room、Android Context 难以直接单测，可以抽出无 Android 依赖的选择/映射/计算逻辑测试，并在最终回复说明覆盖边界。
 - 用户已给出明确修复计划、目标文件/函数、根因方向、修复步骤或验证命令时，走轻量流程：先做一次可行性确认，再按计划执行；不要重新完整展开 root-cause 调查、额外生成独立计划文档或叠加多套方法论流程。

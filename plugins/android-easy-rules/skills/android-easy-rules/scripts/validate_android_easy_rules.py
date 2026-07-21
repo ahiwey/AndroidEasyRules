@@ -113,6 +113,35 @@ dependencies {
         write(root / module / "src" / "main" / "Placeholder.kt", "class Placeholder\n")
 
 
+def create_multidimension_flavor_fixture(root: Path) -> None:
+    write(
+        root / "settings.gradle.kts",
+        '''rootProject.name = "android-easy-rules-multidim"
+include(":mobile")
+''',
+    )
+    write(
+        root / "mobile" / "build.gradle.kts",
+        '''plugins {
+    id("com.android.application")
+}
+android {
+    namespace = "com.example.multidim"
+    defaultConfig { applicationId = "com.example.multidim" }
+    flavorDimensions += listOf("brand", "market")
+    productFlavors {
+        create("demo") { dimension = "brand" }
+        create("china") { dimension = "market" }
+    }
+}
+''',
+    )
+    write(
+        root / "mobile" / "src" / "main" / "java" / "com" / "example" / "multidim" / "MainActivity.kt",
+        "class MainActivity\n",
+    )
+
+
 def validate_fixture_import() -> None:
     with TemporaryDirectory(prefix="android-easy-rules-") as temp:
         target = Path(temp)
@@ -149,9 +178,25 @@ def validate_fixture_import() -> None:
         require(root_agents.count(importer.MARKER_START) == 1, "root AGENTS marker was duplicated")
 
 
+def validate_multidimension_flavor_import() -> None:
+    with TemporaryDirectory(prefix="android-easy-rules-multidim-") as temp:
+        target = Path(temp)
+        create_multidimension_flavor_fixture(target)
+        importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+
+        root_agents = read(target / "AGENTS.md")
+        app_agents = read(target / "mobile" / "AGENTS.md")
+        expected_assemble = ".\\gradlew.bat :mobile:assembleDemoChinaDebug"
+        expected_test = ".\\gradlew.bat :mobile:testDemoChinaDebugUnitTest"
+        require(expected_assemble in root_agents, "multi-dimension assemble task was not inferred")
+        require(expected_test in root_agents, "multi-dimension unit test task was not inferred")
+        require(expected_assemble in app_agents, "multi-dimension app module assemble task was not inferred")
+
+
 def main() -> int:
     validate_static_pack()
     validate_fixture_import()
+    validate_multidimension_flavor_import()
     print("AndroidEasyRules validation passed")
     return 0
 

@@ -79,7 +79,11 @@ def detect_modules(project: Path) -> list[str]:
     )
     if settings is None:
         return []
-    content = read_text(settings)
+    # Ignore full-line comments so disabled modules do not receive generated rules.
+    content = "\n".join(
+        line for line in read_text(settings).splitlines()
+        if not re.match(r"^\s*//", line)
+    )
     modules: list[str] = []
     for match in re.finditer(r"include\s*(?:\(|)\s*([^\n\r)]*)", content):
         raw = match.group(1)
@@ -165,24 +169,110 @@ def detect_gradle_string(content: str, key: str) -> str | None:
     return None
 
 
-def detect_first_flavor(content: str) -> str | None:
-    block_match = re.search(r"productFlavors\s*\{(?P<body>.*?)\n\s*\}", content, re.DOTALL)
-    if not block_match:
-        return None
-    body = block_match.group("body")
-    factory_match = re.search(
-        r"\b(?:create|register)\s*\(\s*['\"]([^'\"]+)['\"]\s*\)", body
-    )
-    if factory_match:
-        return factory_match.group(1)
-    for line in body.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("//"):
+def find_matching_brace(text: str, open_index: int) -> int:
+    depth = 0
+    quote: str | None = None
+    escape = False
+    for index in range(open_index, len(text)):
+        char = text[index]
+        if quote:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == quote:
+                quote = None
             continue
-        match = re.match(r"([A-Za-z_][A-Za-z0-9_]*)\s*(?:\{|$)", stripped)
-        if match and match.group(1) not in {"create", "register"}:
-            return match.group(1)
-    return None
+        if char in {"'", '"'}:
+            quote = char
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return index
+    return -1
+
+
+def extract_gradle_block(content: str, name: str) -> str:
+    match = re.search(rf"\b{re.escape(name)}\s*\{{", content)
+    if not match:
+        return ""
+    open_index = match.end() - 1
+    close_index = find_matching_brace(content, open_index)
+    if close_index == -1:
+        return ""
+    return content[open_index + 1 : close_index]
+
+
+def detect_flavor_dimensions(content: str) -> list[str]:
+    dimensions: list[str] = []
+    for pattern in (
+        r"\bflavorDimensions\s*(?:=|\+=)?\s*(?:listOf\s*\()?([^\n\r)]*)",
+        r"\bflavorDimensions\.add\s*\(\s*['\"]([^'\"]+)['\"]\s*\)",
+    ):
+        for match in re.finditer(pattern, content):
+            dimensions.extend(re.findall(r"['\"]([^'\"]+)['\"]", match.group(0)))
+    return list(dict.fromkeys(dimensions))
+
+
+def detect_flavor_dimension(block: str) -> str | None:
+    match = re.search(r"\bdimension\s*(?:=|\s)\s*['\"]([^'\"]+)['\"]", block)
+    return match.group(1) if match else None
+
+
+def detect_product_flavors(content: str) -> list[tuple[str, str | None]]:
+    body = extract_gradle_block(content, "productFlavors")
+    if not body:
+        return []
+    flavors: list[tuple[str, str | None]] = []
+    for match in re.finditer(r"\b(?:create|register)\s*\(\s*['\"]([^'\"]+)['\"]\s*\)", body):
+        flavor_body = ""
+        brace_index = body.find("{", match.end())
+        if brace_index != -1:
+            close_index = find_matching_brace(body, brace_index)
+            if close_index != -1:
+                flavor_body = body[brace_index + 1 : close_index]
+        flavors.append((match.group(1), detect_flavor_dimension(flavor_body)))
+
+    for match in re.finditer(r"(?m)^\s*([A-Za-z_][A-Za-z0-9_]*)\s*\{", body):
+        name = match.group(1)
+        if name in {"create", "register"} or any(existing == name for existing, _ in flavors):
+            continue
+        close_index = find_matching_brace(body, match.end() - 1)
+        flavor_body = body[match.end() : close_index] if close_index != -1 else ""
+        flavors.append((name, detect_flavor_dimension(flavor_body)))
+    return flavors
+
+
+def detect_default_flavor_selection(content: str) -> list[str]:
+    flavors = detect_product_flavors(content)
+    if not flavors:
+        return []
+    dimensions = detect_flavor_dimensions(content)
+    if not dimensions:
+        return [flavors[0][0]]
+
+    by_dimension: dict[str, str] = {}
+    unassigned: list[str] = []
+    for name, dimension in flavors:
+        if dimension:
+            by_dimension.setdefault(dimension, name)
+        else:
+            unassigned.append(name)
+
+    selected: list[str] = []
+    for dimension in dimensions:
+        if dimension in by_dimension:
+            selected.append(by_dimension[dimension])
+        elif unassigned:
+            selected.append(unassigned.pop(0))
+    return selected or [flavors[0][0]]
+
+
+def detect_first_flavor(content: str) -> str | None:
+    selection = detect_default_flavor_selection(content)
+    return selection[0] if selection else None
 
 
 def capitalize_task_part(value: str) -> str:
@@ -375,8 +465,8 @@ def detect_android_values(project: Path, app_module: str | None) -> dict[str, st
     capability_flags = detect_capability_flags(project, app_module)
     namespace = detect_gradle_string(app_build, "namespace")
     application_id = detect_gradle_string(app_build, "applicationId")
-    flavor = detect_first_flavor(app_build)
-    variant_prefix = capitalize_task_part(flavor) if flavor else ""
+    flavor_selection = detect_default_flavor_selection(app_build)
+    variant_prefix = "".join(capitalize_task_part(flavor) for flavor in flavor_selection)
     main_package_path = detect_source_root(project, app_module, namespace)
     app_agents_path = module_agents_path(app_module) if app_module else "<填写主应用模块>/AGENTS.md"
     app_identity_parts = []
@@ -384,8 +474,12 @@ def detect_android_values(project: Path, app_module: str | None) -> dict[str, st
         app_identity_parts.append(f"namespace 为 `{namespace}`")
     if application_id:
         app_identity_parts.append(f"applicationId 为 `{application_id}`")
-    if flavor:
-        app_identity_parts.append(f"默认 flavor 为 `{flavor}`")
+    if len(flavor_selection) == 1:
+        app_identity_parts.append(f"默认 flavor 为 `{flavor_selection[0]}`")
+    elif flavor_selection:
+        app_identity_parts.append(
+            f"默认 flavor 组合为 `{variant_prefix[:1].lower() + variant_prefix[1:]}`"
+        )
     app_identity_line = "，".join(app_identity_parts) + "。" if app_identity_parts else "未自动识别 namespace/applicationId/flavor，修改构建配置前先读取 app build.gradle。"
     values = {
         "root_project_name": detect_root_project_name(project),
@@ -442,6 +536,7 @@ def generated_agents_section() -> str:
 - Claude Code 读取 `CLAUDE.md`，但 `CLAUDE.md` 只作为薄入口指向 `AGENTS.md`。
 - 业务定位先按关键词查 `MEMORY.md`，结构定位用 CodeGraph，固定文本和资源名用 `rg`。
 - 是否补跑 assemble 由代理按影响范围自主判断，不把 assemble 机械作为每次局部逻辑改动的完成条件。
+- 运行 Gradle 前先确认目标模块真实存在的 task 名；若出现 `Task not found`、flavor/buildType 变化或命令不确定，先读 `settings.gradle*` 与目标模块 `build.gradle*`，必要时运行 `.\\gradlew.bat :<module>:tasks --all` 枚举后再选择。
 - Android 单测过滤优先使用 `--tests '*TargetTest*'` 通配形式。"""
 
 
@@ -607,8 +702,19 @@ def import_rules(target: Path, rules_pack: Path, dry_run: bool, strict: bool = F
     claude_path = target / "CLAUDE.md"
     if not claude_path.exists():
         write_text(claude_path, claude_entry(), dry_run)
-    elif read_text(claude_path).strip() != claude_entry().strip():
-        merge_marked_file(claude_path, claude_entry(), claude_entry(), dry_run)
+    else:
+        claude_text = read_text(claude_path)
+        marker_pattern = re.compile(
+            rf"{re.escape(MARKER_START)}.*?{re.escape(MARKER_END)}",
+            re.DOTALL,
+        )
+        without_generated_entry = marker_pattern.sub("", claude_text).strip()
+        if claude_text.strip() == claude_entry().strip():
+            pass
+        elif without_generated_entry == claude_entry().strip():
+            write_text(claude_path, claude_entry(), dry_run)
+        elif claude_text.strip() != claude_entry().strip():
+            merge_marked_file(claude_path, claude_entry(), claude_entry(), dry_run)
     merge_marked_file(target / "MEMORY.md", memory_template, generated_memory_section(values), dry_run)
     missing_rules = [name for name in RULE_FILES if not (rules_pack / name).exists()]
     if missing_rules:

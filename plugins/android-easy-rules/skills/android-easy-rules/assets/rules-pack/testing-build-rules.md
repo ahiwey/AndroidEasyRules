@@ -10,6 +10,8 @@
 
 ## 推荐命令模板
 
+使用本表前先确认模块名、flavor 组合和 buildType 对应的 Gradle task 真实存在；不确定时运行 `./gradlew :<module>:tasks --all` 或读取目标模块 `build.gradle*` 后再替换 `<Flavor>`，不要凭默认 `app`、`Debug` 或单个 flavor 猜测。
+
 | 影响范围 | 推荐验证 |
 | --- | --- |
 | app Kotlin/Java/XML/资源 | `./gradlew :app:assemble<Flavor>Debug` |
@@ -36,4 +38,3 @@
 - 只修复与本次任务相关的失败；历史遗留或环境问题要在回复中说明，不要擅自扩大修改范围。
 - 不要通过降低 minSdk/targetSdk、关闭 lint、关闭 minify、删除资源、移除依赖、改签名配置等方式让构建“看起来通过”，除非任务明确要求。
 - 不要默认执行 `clean`；只有怀疑 Gradle 缓存或生成物污染时才考虑，并说明原因。
-
