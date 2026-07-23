@@ -45,6 +45,24 @@ def validate_static_pack() -> None:
         text = read(path)
         require("\ufffd" not in text, f"invalid UTF-8 replacement character: {name}")
 
+    global_rules = read(PACK_DIR / "global-AGENTS.md")
+    root_rules = read(PACK_DIR / "root-AGENTS.template.md")
+    testing_rules = read(PACK_DIR / "testing-build-rules.md")
+    screenshot_rules = read(PACK_DIR / "screenshot-ui-rules.md")
+    custom_view_rules = read(PACK_DIR / "custom-view-chart-rules.md")
+
+    for text in (global_rules, root_rules):
+        require("`gpt-5.5`" in text, "gpt-5.5 Superpowers routing is missing")
+        require("`gpt-5.6`" in text and "`superpowers:*`" in text, "gpt-5.6 Superpowers exclusion is missing")
+        require("不自动安装或调用 `grill-me`" in text, "grill-me opt-out is missing")
+
+    require("Quick 默认预算" in root_rules, "Quick execution budget is missing")
+    require("状态 × 事件 × 期望输出" in root_rules, "state transition matrix rule is missing")
+    require("process<Flavor>DebugResources" in testing_rules, "focused resource task is missing")
+    require("不重跑同一命令" in testing_rules, "Gradle timeout retry guard is missing")
+    require("不默认运行 Gradle" in screenshot_rules, "screenshot Quick validation rule is missing")
+    require("不加载通用 UI/UX 流程" in custom_view_rules, "custom View Quick routing is missing")
+
     source_specific = re.compile(
         r"E:\\工作相关|D:\\Project\\(?:Android|SDKSample)|app_android_2025|Lib_SDK_BLE|ringchatkit|QRing_00[34]",
         re.IGNORECASE,

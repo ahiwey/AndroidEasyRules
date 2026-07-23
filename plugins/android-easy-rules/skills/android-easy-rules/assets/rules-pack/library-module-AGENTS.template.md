@@ -15,7 +15,7 @@
 
 ## 验证
 
-- 代码或资源修改后优先运行 `./gradlew :<module>:assembleDebug`。
+- 按根规则和 `AGENTS/testing-build-rules.md` 选择最小验证；现有数值或资源属性调整不默认运行 Gradle。
 - 可隔离逻辑改动优先补充本地单元测试并运行 `./gradlew :<module>:testDebugUnitTest`。
-- 如果 app 使用该模块，必要时再运行 app assemble。
-
+- public API、类型签名或跨模块边界变化时运行一次最小编译；只有需要 AAR/集成产物时才运行 `./gradlew :<module>:assembleDebug`。
+- 如果 app 使用该模块，只有 app 集成边界无法由更小任务覆盖时才运行 app assemble。

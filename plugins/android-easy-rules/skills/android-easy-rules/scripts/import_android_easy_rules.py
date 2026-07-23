@@ -535,7 +535,8 @@ def generated_agents_section() -> str:
 - `AGENTS.md` 是 Codex 的唯一完整项目规则源。
 - Claude Code 读取 `CLAUDE.md`，但 `CLAUDE.md` 只作为薄入口指向 `AGENTS.md`。
 - 业务定位先按关键词查 `MEMORY.md`，结构定位用 CodeGraph，固定文本和资源名用 `rg`。
-- 是否补跑 assemble 由代理按影响范围自主判断，不把 assemble 机械作为每次局部逻辑改动的完成条件。
+- 默认不进行编译校验；只有用户明确要求，或完成任务实际需要时才执行编译。
+- 在满足全局编译条件后，是否补跑 assemble 由代理按影响范围自主判断，不把 assemble 机械作为每次局部逻辑改动的完成条件。
 - 运行 Gradle 前先确认目标模块真实存在的 task 名；若出现 `Task not found`、flavor/buildType 变化或命令不确定，先读 `settings.gradle*` 与目标模块 `build.gradle*`，必要时运行 `.\\gradlew.bat :<module>:tasks --all` 枚举后再选择。
 - Android 单测过滤优先使用 `--tests '*TargetTest*'` 通配形式。"""
 

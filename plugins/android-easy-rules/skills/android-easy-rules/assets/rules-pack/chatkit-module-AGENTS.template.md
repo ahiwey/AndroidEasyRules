@@ -19,6 +19,6 @@
 
 ## 验证
 
-- 优先运行 `./gradlew :<module>:assembleDebug`。
-- 如果 app 内也有复制代码或资源受影响，再运行 app assemble。
-
+- 现有颜色、间距、文案和资源属性调整优先做静态与视觉检查；新增/重命名资源引用时运行一次最小资源处理任务。
+- public API、类型签名或跨模块边界变化时运行一次最小编译；需要 AAR 产物时才运行 `./gradlew :<module>:assembleDebug`。
+- 如果 app 内也有复制代码或资源受影响，只有 app 集成边界无法由更小任务覆盖时才运行 app assemble。

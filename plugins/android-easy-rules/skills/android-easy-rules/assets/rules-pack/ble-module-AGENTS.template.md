@@ -19,8 +19,8 @@
 
 ## 验证
 
-- 优先运行 `./gradlew :<module>:assembleDebug`。
+- 按根规则和 `AGENTS/testing-build-rules.md` 选择最小验证，不把 assemble 作为 BLE 代码改动的默认完成条件。
 - 协议解析、byte/CRC、时间戳、单位换算、数据实体映射等可隔离逻辑改动，优先新增或更新本地单元测试。
-- 如果改动会影响 app 调用、设备连接、同步、OTA 或文件传输，再运行 app debug assemble。
+- public API、类型签名或跨模块边界变化时运行一次最小编译；需要 AAR 或完整集成产物时才运行 module assemble。
+- 如果改动会影响 app 调用、设备连接、同步、OTA 或文件传输，优先说明真机场景；只有 app 集成边界无法由更小任务覆盖时才运行 app debug assemble。
 - BLE 行为通常需要真机和设备验证；未做真机验证时，最终回复必须说明只完成了编译级验证。
-

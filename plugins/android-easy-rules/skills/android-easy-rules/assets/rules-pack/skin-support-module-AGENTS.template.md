@@ -13,6 +13,5 @@
 
 ## 验证
 
-- 本地模块启用时，运行对应 module assemble。
-- app 使用本地模块时，再运行 app assemble。
-
+- 本地模块启用时按根规则选择静态检查、最小资源处理或最小编译，不默认运行 module assemble。
+- 需要 AAR 产物或完整主题集成验证时才运行 module assemble；只有 app 集成边界无法由更小任务覆盖时才运行 app assemble。
