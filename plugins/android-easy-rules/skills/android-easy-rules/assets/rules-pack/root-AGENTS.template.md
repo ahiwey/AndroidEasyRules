@@ -20,6 +20,7 @@
 
 - 不把单元测试机械当作所有任务的完成条件；可隔离逻辑改动优先考虑聚焦测试。
 - 默认不进行编译校验；只有用户明确要求，或完成任务实际需要时才执行编译。模块级“优先运行 assemble/编译”只在此条件满足后适用。
+- 用户要求 Android Studio 构建优先或允许 Codex 超时跳过时，运行 Gradle 前先检查实际活跃构建；常驻空闲 daemon 不算活跃。已有构建时直接跳过并在最终回复标明未完成编译验证。
 - 校验修改时，按影响范围运行最小必要验证；文档、规则、纯注释修改通常不需要 Gradle。
 - 数值参数和现有资源属性调整使用静态差异与必要视觉检查；新增/重命名资源引用时使用一次最小资源处理任务；类型、签名或跨模块边界变化时使用一次最小编译或聚焦测试。
 - 只有用户要求产物、改动构建/manifest/签名/打包链路，或更小验证无法覆盖集成边界时，才补受影响模块 assemble。
@@ -31,6 +32,8 @@
 - 当前模型标识以 `gpt-5.6` 开头时，默认不调用任何 `superpowers:*` 技能，即使插件已经暴露；用户在本轮明确要求使用时，以本轮要求为准。
 - `gpt-5.5` 任务需要 Superpowers 但技能不可用时，只说明一次并按本项目规则继续，不搜索或安装插件，也不声称已经使用。
 - 不自动安装或调用 `grill-me`；探索后仍有产品决策时，只询问 1–3 个会改变实现的关键问题。
+- 任务速度、截图识别、编译验证收敛类任务优先使用 `android-fast-workflow` 技能；该技能只负责路由、预算和验证选择，不替代项目真实规则。
+- 可用专项技能要精准触发：commit/分支迁移用 `$commit-migration`，R8/keep 规则用 `$r8-analyzer`，截图/移动端体验评审用 `ui-ux-pro-max`，自定义 View/图表按 `AGENTS/custom-view-chart-rules.md`；当前会话未暴露某工具或技能时，不声称已使用。
 
 ## 会话启动流程
 
@@ -46,6 +49,13 @@
 
 不要为了“了解项目”全量扫描仓库。先用 `MEMORY.md` 定位，再用 CodeGraph 或 `rg` 查证。
 
+## 用户称呼与索引对齐
+
+- 用户对页面、模块或业务的称呼和 `MEMORY.md` 名称不一致时，先在 `MEMORY.md` 的“别名与索引命名”或业务索引中映射标准入口。
+- 回复中使用“用户称呼 -> 索引名称”的方式轻提醒，例如“我按索引里的 `首页健康/首页卡片` 处理”，帮助后续统一叫法。
+- 一个称呼只命中一个明确索引时直接执行；命中多个索引且会改变实现范围时，只问 1–3 个关键问题。
+- 完成任务时，如果发现用户常用称呼没有对应索引，且后续大概率复用，应同步补到 `MEMORY.md`。
+
 ## 上下文与验证效率
 
 - `MEMORY.md` 默认只按关键词检索，不整文件读取；关键词包括业务名、模块名、页面名、协议名、资源名、错误现象和用户原话中的中英文别名。只有检索命中缺失、内容疑似过期或任务本身要求维护索引时，才读取相关段落或更新 `MEMORY.md`。
@@ -54,6 +64,7 @@
 - 外部命令优先用 `rtk` 包装以减少输出噪音，例如 `rtk git status`、`rtk rg "keyword"`、`rtk .\gradlew.bat :app:assembleDebug`。
 - 读取 PowerShell 内置命令时按 RTK 约定使用 `rtk powershell -NoProfile -Command "..."`；可执行文件和脚本使用 `rtk <exe> ...`。不要先尝试 `rtk Get-Content`、`rtk Get-ChildItem` 等无法直接解析的 cmdlet。
 - 运行 Gradle 前必须确认目标模块真实存在的 task 名；优先使用本文件、模块 `AGENTS.md` 或 `MEMORY.md` 已记录的命令，若出现 `Task not found`、flavor/buildType 变化或命令不确定，先读 `settings.gradle*` 与目标模块 `build.gradle*`，必要时运行 `rtk .\gradlew.bat :<module>:tasks --all` 枚举后再选择。
+- Android Studio 构建优先时，Codex 只在 Gradle 空闲窗口运行最窄任务，默认附加 `--max-workers=1 --no-parallel` 并设置明确超时；超时只取消本次调用，不执行 `gradlew --stop`、`clean` 或结束未知 Java 进程。
 - Android 单测过滤优先使用通配形式，例如 `.\gradlew.bat :app:test<Flavor>DebugUnitTest --tests '*TargetTest*'`，避免 flavor 变体下精确类名过滤发现失败。
 - 可隔离逻辑改动优先新增小而准的纯单元测试；如果现有架构导致 Repository、Room、Android Context 难以直接单测，可以抽出无 Android 依赖的选择/映射/计算逻辑测试，并在最终回复说明覆盖边界。
 - 用户已给出明确修复计划、目标文件/函数、根因方向、修复步骤或验证命令时，走轻量流程：先做一次可行性确认，再按计划执行；不要重新完整展开 root-cause 调查、额外生成独立计划文档或叠加多套方法论流程。
@@ -128,6 +139,7 @@
 - 图片、图标、drawable、mipmap 资源任务：参考 `AGENTS/image-resource-rules.md`。
 - 自定义 View、Canvas、图表任务：参考 `AGENTS/custom-view-chart-rules.md`。
 - 迁移 commit、提交范围、其他分支或品牌分支功能：参考 `AGENTS/commit-migration-rules.md`，并使用 `$commit-migration` 技能。
+- 任务速度、截图识别、编译验证收敛：优先使用 `android-fast-workflow` 技能和本文件 Quick/Strict 分流规则。
 - 录音导入、Wi-Fi 录音、Sample/SDK/AAR 覆盖：参考 `AGENTS/recording-sdk-rules.md`。
 - 多语言文案、批量 `strings.xml` 同步：参考 `AGENTS/multilang-string-rules.md`。
 - 权限、通知、后台任务、WebView/JSBridge、Health Connect、Firebase、地图、签名发布、manifest 合并：参考 `AGENTS/android-platform-integration-rules.md`。

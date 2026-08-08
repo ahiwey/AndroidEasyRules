@@ -78,6 +78,7 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 | `android-platform-integration-rules.md` | 权限、通知、后台、WebView/JSBridge、Health Connect、Firebase、地图、签名发布和 manifest 合并规则 |
 | `neat-freak-rules.md` | 洁癖/知识收尾规则，融合自 `KKKKhazix/khazix-skills/neat-freak`，用于文档、规则、记忆和工作区残留审计 |
 | `r8-proguard-rules.md` | R8/ProGuard/missing class/keep 规则分析与修改边界 |
+| 插件技能 `android-fast-workflow` | 任务速度、截图识别、编译速度、索引命名对齐的轻量路由技能 |
 | `library-module-AGENTS.template.md` | 通用 Android library 模块规则 |
 | `ble-module-AGENTS.template.md` | BLE/设备协议模块规则 |
 | `chatkit-module-AGENTS.template.md` | 聊天 UI 组件模块规则 |
@@ -92,5 +93,5 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 - `AGENTS.md` 是唯一项目规则源，不要并行维护一份内容重复的 `CLAUDE.md`。
 - 截图还原、分支迁移、资源导入、自定义 View、录音 SDK/AAR、多语言同步、平台集成、洁癖收尾和 R8 混淆是高风险任务，建议保留对应独立规则文件并在根规则中引用。
 - `neat-freak-rules.md` 只融合知识治理思想，不引入外部脚本、evals 或打开项目时的自动审计；来源项目采用 MIT License。
-- 规则包修改后从技能目录运行 `python scripts/validate_android_easy_rules.py`；目标项目导入前可用 importer 的 `--dry-run --strict` 检查缺失规则和未替换占位符。
+- 规则包修改后从技能目录运行 `python scripts/validate_android_easy_rules.py`，健康评分需达到 `A+` 或更高；目标项目导入前可用 importer 的 `--dry-run --strict` 检查缺失规则和未替换占位符。
 - 如果目标项目已有规则，先合并用户偏好和项目约束，不要覆盖掉已有规则。

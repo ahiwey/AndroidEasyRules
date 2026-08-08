@@ -48,6 +48,7 @@ Use `--dry-run` first when the target already has substantial rules files, when 
    - `CLAUDE.md` is a thin Claude Code entrypoint pointing to `AGENTS.md`.
    - `MEMORY.md` is a project index and must not contain source-project business details.
    - `AGENTS/` contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, commit migration, recording SDK/AAR flows, multilang strings, Android platform integration, neat-freak knowledge closeout, and R8/ProGuard.
+   - The plugin also provides `android-fast-workflow` for fast Android task routing, screenshot recognition, compile-speed decisions, and MEMORY.md alias alignment.
 
 6. If the importer cannot infer a detail, replace placeholders conservatively:
    - module list
@@ -68,7 +69,7 @@ Use `--dry-run` first when the target already has substantial rules files, when 
 
 - `assets/rules-pack/`: Android rules templates and focused rule files, including Chinese Karpathy behavior guidelines, Android platform integration rules, and neat-freak knowledge closeout rules adapted from `KKKKhazix/khazix-skills/neat-freak` under MIT License.
 - `scripts/import_android_easy_rules.py`: conservative importer for AGENTS, CLAUDE, MEMORY, and `AGENTS/` rule files.
-- `scripts/validate_android_easy_rules.py`: standard-library self-check for pack completeness, UTF-8, source leakage, detection routes, and idempotent fixture import.
+- `scripts/validate_android_easy_rules.py`: standard-library self-check for pack completeness, UTF-8, source leakage, detection routes, idempotent fixture import, and A+ health score output.
 
 ## Validation
 
@@ -85,3 +86,5 @@ For a rules-only change, run:
 python scripts/validate_android_easy_rules.py
 python scripts/import_android_easy_rules.py <target-project-root> --dry-run --strict
 ```
+
+The validator must report `health_grade=A+` or higher before exporting or publishing the rules pack.

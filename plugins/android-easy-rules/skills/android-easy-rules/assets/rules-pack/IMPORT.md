@@ -171,6 +171,7 @@
 - 权限、通知、后台任务、WebView/JSBridge、Health Connect、Firebase、地图、签名发布和 manifest 合并任务先参考该规则。
 - importer 可从 Gradle、manifest、assets 和常见依赖关键词推断平台集成信号，但不能据此自动改依赖、签名、密钥或发布配置。
 - 平台配置类改动必须优先说明影响范围和最小验证；规则/文档改动只做脚本和 dry-run 验证，不默认跑 Gradle。
+- 任务速度、截图识别、编译验证收敛或索引命名不一致时，优先使用插件技能 `android-fast-workflow`，再按目标项目规则选择最小上下文和最小验证。
 
 ## 洁癖收尾规则要求
 
@@ -197,6 +198,7 @@
 - 已识别的目标项目模块。
 - 已替换的项目专属信息，例如包名、flavor、构建命令。
 - 没有生成某些模块规则的原因。
+- AndroidEasyRules validator 健康评分；应达到 `A+` 或更高，低于 `A+` 时继续修正后再交付。
 - 是否需要用户补充业务索引或确认构建命令。
 
-规则包维护者还应从技能目录运行 `python scripts/validate_android_easy_rules.py`；导入验证可使用技能目录下的 `scripts/import_android_easy_rules.py <target> --dry-run --strict`，让缺失规则或未替换占位符直接失败。
+规则包维护者还应从技能目录运行 `python scripts/validate_android_easy_rules.py`；导入验证可使用技能目录下的 `scripts/import_android_easy_rules.py <target> --dry-run --strict`，让缺失规则或未替换占位符直接失败。validator 必须输出 `health_grade=A+` 或更高。

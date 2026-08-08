@@ -32,5 +32,5 @@
 
 - 修改 importer 脚本后运行 `python -m py_compile plugins/android-easy-rules/skills/android-easy-rules/scripts/import_android_easy_rules.py`。
 - 修改插件或 skill 元数据后运行插件校验和 skill 校验。
-- 修改规则包导入行为后至少运行 importer `--dry-run`。
+- 修改规则包导入行为后至少运行 importer `--dry-run --strict`，并确认 validator 输出 `health_grade=A+` 或更高。
 - 校验脚本处理中文文件时使用 UTF-8 模式，避免 Windows GBK 解码失败。

@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
+PLUGIN_SKILLS_DIR = SKILL_DIR.parent
 PACK_DIR = SKILL_DIR / "assets" / "rules-pack"
 sys.path.insert(0, str(SCRIPT_DIR))
 import import_android_easy_rules as importer  # noqa: E402
@@ -33,11 +34,18 @@ def write(path: Path, content: str) -> None:
 
 def validate_static_pack() -> None:
     skill_text = read(SKILL_DIR / "SKILL.md")
+    fast_workflow = read(PLUGIN_SKILLS_DIR / "android-fast-workflow" / "SKILL.md")
     require(skill_text.startswith("---\n"), "SKILL.md is missing YAML frontmatter")
     frontmatter = skill_text.split("---\n", 2)[1]
     keys = [line.split(":", 1)[0].strip() for line in frontmatter.splitlines() if ":" in line]
     require(keys == ["name", "description"], "SKILL.md frontmatter must only contain name and description")
     require("AndroidEasyRules" in skill_text and "AGENTS" in skill_text, "SKILL.md trigger description is incomplete")
+    require(fast_workflow.startswith("---\n"), "android-fast-workflow is missing YAML frontmatter")
+    fast_frontmatter = fast_workflow.split("---\n", 2)[1]
+    fast_keys = [line.split(":", 1)[0].strip() for line in fast_frontmatter.splitlines() if ":" in line]
+    require(fast_keys == ["name", "description"], "android-fast-workflow frontmatter must only contain name and description")
+    for token in ("screenshot recognition", "compile/build speed", "MEMORY.md name mismatch"):
+        require(token in fast_workflow, f"android-fast-workflow trigger is missing: {token}")
 
     for name in importer.RULE_FILES:
         path = PACK_DIR / name
@@ -50,6 +58,9 @@ def validate_static_pack() -> None:
     testing_rules = read(PACK_DIR / "testing-build-rules.md")
     screenshot_rules = read(PACK_DIR / "screenshot-ui-rules.md")
     custom_view_rules = read(PACK_DIR / "custom-view-chart-rules.md")
+    memory_template = read(PACK_DIR / "MEMORY.template.md")
+    import_rules = read(PACK_DIR / "IMPORT.md")
+    readme = read(PACK_DIR / "README.md")
 
     for text in (global_rules, root_rules):
         require("`gpt-5.5`" in text, "gpt-5.5 Superpowers routing is missing")
@@ -57,11 +68,23 @@ def validate_static_pack() -> None:
         require("不自动安装或调用 `grill-me`" in text, "grill-me opt-out is missing")
 
     require("Quick 默认预算" in root_rules, "Quick execution budget is missing")
+    require("用户称呼与索引对齐" in root_rules, "index naming alignment rule is missing")
+    require("android-fast-workflow" in root_rules, "fast workflow skill routing is missing")
     require("状态 × 事件 × 期望输出" in root_rules, "state transition matrix rule is missing")
+    require("别名与索引命名" in memory_template, "MEMORY alias table is missing")
+    require("热点页面索引模板" in memory_template, "hot page index template is missing")
+    require("截图识别提效" in screenshot_rules, "screenshot recognition efficiency rules are missing")
     require("process<Flavor>DebugResources" in testing_rules, "focused resource task is missing")
+    require("编译速度优化" in testing_rules, "compile speed optimization rules are missing")
+    require("Android Studio 构建优先" in testing_rules, "Android Studio build priority rules are missing")
+    require("常驻但空闲的 daemon" in global_rules, "active Gradle detection rule is missing")
+    require("--max-workers=1 --no-parallel" in root_rules, "low-contention Gradle flags are missing")
+    require("gradlew --stop" in testing_rules, "shared Gradle daemon protection is missing")
     require("不重跑同一命令" in testing_rules, "Gradle timeout retry guard is missing")
     require("不默认运行 Gradle" in screenshot_rules, "screenshot Quick validation rule is missing")
     require("不加载通用 UI/UX 流程" in custom_view_rules, "custom View Quick routing is missing")
+    for text, label in ((import_rules, "IMPORT.md"), (readme, "README.md")):
+        require("A+" in text and "health" in text.lower() or "健康评分" in text, f"A+ health scoring guidance is missing in {label}")
 
     source_specific = re.compile(
         r"E:\\工作相关|D:\\Project\\(?:Android|SDKSample)|app_android_2025|Lib_SDK_BLE|ringchatkit|QRing_00[34]",
@@ -171,6 +194,10 @@ def validate_fixture_import() -> None:
         app_agents = read(target / "app" / "AGENTS.md")
         require("namespace 为 `com.example.fixture`" in app_agents, "namespace was not inferred")
         require("默认 flavor 为 `demo`" in app_agents, "Kotlin DSL flavor was not inferred")
+        require("健康评分应达到 `A+`" in root_agents, "A+ health scoring rule was not imported")
+        require("Android Studio 构建优先" in root_agents, "Android Studio build priority rule was not imported")
+        require("别名与索引命名" in memory, "MEMORY alias section was not imported")
+        require("热点页面索引模板" in memory, "MEMORY hot page template was not imported")
         for topic in ("Compose", "Navigation", "Room", "WebView/JSBridge/assets", "Firebase", "Health Connect", "地图", "通知"):
             require(topic in root_agents, f"capability route missing: {topic}")
         require("ble-core/AGENTS.md" in memory, "BLE module route missing")
@@ -211,11 +238,40 @@ def validate_multidimension_flavor_import() -> None:
         require(expected_assemble in app_agents, "multi-dimension app module assemble task was not inferred")
 
 
+def health_report() -> tuple[int, str]:
+    checks = [
+        (PACK_DIR / name).is_file() for name in importer.RULE_FILES
+    ]
+    checks.extend(
+        [
+            (PLUGIN_SKILLS_DIR / "android-fast-workflow" / "SKILL.md").is_file(),
+            "用户称呼与索引对齐" in read(PACK_DIR / "root-AGENTS.template.md"),
+            "别名与索引命名" in read(PACK_DIR / "MEMORY.template.md"),
+            "热点页面索引模板" in read(PACK_DIR / "MEMORY.template.md"),
+            "截图识别提效" in read(PACK_DIR / "screenshot-ui-rules.md"),
+            "编译速度优化" in read(PACK_DIR / "testing-build-rules.md"),
+            "A+" in importer.generated_agents_section(),
+        ]
+    )
+    score = round(sum(1 for passed in checks if passed) / len(checks) * 100)
+    if score >= 95:
+        grade = "A+"
+    elif score >= 90:
+        grade = "A"
+    elif score >= 80:
+        grade = "B"
+    else:
+        grade = "C"
+    return score, grade
+
+
 def main() -> int:
     validate_static_pack()
     validate_fixture_import()
     validate_multidimension_flavor_import()
-    print("AndroidEasyRules validation passed")
+    score, grade = health_report()
+    require(grade == "A+", f"health grade is below A+: score={score} grade={grade}")
+    print(f"AndroidEasyRules validation passed health_score={score} health_grade={grade}")
     return 0
 
 

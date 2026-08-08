@@ -30,6 +30,18 @@
 | 网络请求、签名、API、Repository | `app/AGENTS.md` | API/Repository/DI 目录 |
 | 权限、通知、广播、后台任务、WebView/JSBridge、Health Connect、Firebase、地图、签名发布 | `AGENTS/android-platform-integration-rules.md` | manifest、app 入口类、Gradle、配置文件 |
 
+## 别名与索引命名
+
+当用户口头称呼和本文件索引名称不一致时，优先使用本表或业务索引映射；回复中轻提醒“我按索引里的 `<名称>` 处理”，帮助后续统一叫法。
+
+| 用户常说 | 索引名称/标准入口 | 优先关键词 |
+| --- | --- | --- |
+| 首页、主页、首页卡片、健康卡片 | 首页/主应用首页索引 | 首页 Fragment、首页 Adapter、首页 item layout |
+| 会议、会议记录、会议纪要、会议转写 | 会议/录音/转写索引 | Meeting、Minute、Transcription、Record |
+| 录音、音频文件、设备录音 | 录音导入/音频文件索引 | Recording、AudioFile、RecordHandle、Import |
+| 登录、账号、个人中心、我的 | 我的/账号索引 | Mine、Login、User、Profile |
+| 设备、戒指、蓝牙、同步 | 设备/BLE 索引 | Device、BLE、Bluetooth、Sync |
+
 ## 模块索引
 
 | 模块 | 作用 | 优先规则 | 注意事项 |
@@ -42,6 +54,15 @@
 | 目录/文件 | 内容 |
 | --- | --- |
 | `<填写目录>` | `<填写业务说明>` |
+
+## 热点页面索引模板
+
+如果目标项目存在经常改动的页面，必须在本节补细到“用户称呼 -> 标准入口 -> UI/layout -> 数据/adapter -> 风险”，避免每次从大目录重新搜索。
+
+| 热点区域 | 用户常说 | 标准入口 | UI/资源入口 | 数据/业务入口 | 注意事项 |
+| --- | --- | --- | --- | --- | --- |
+| `<例如：首页卡片>` | `<例如：首页、主页卡片、健康卡片>` | `<Fragment/Activity>` | `<layout/item/drawable/mipmap>` | `<ViewModel/Adapter/Bean>` | `<小屏、空态、排序、点击>` |
+| `<例如：会议记录>` | `<例如：会议、录音、转写>` | `<Activity/Fragment>` | `<layout/item/strings>` | `<VM/Repository/Room/SDK>` | `<权限、额度、续传、播放器>` |
 
 ## 高风险改动清单
 

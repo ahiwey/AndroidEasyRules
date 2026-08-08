@@ -537,8 +537,10 @@ def generated_agents_section() -> str:
 - 业务定位先按关键词查 `MEMORY.md`，结构定位用 CodeGraph，固定文本和资源名用 `rg`。
 - 默认不进行编译校验；只有用户明确要求，或完成任务实际需要时才执行编译。
 - 在满足全局编译条件后，是否补跑 assemble 由代理按影响范围自主判断，不把 assemble 机械作为每次局部逻辑改动的完成条件。
+- 用户要求 Android Studio 构建优先或允许 Codex 超时跳过时，运行 Gradle 前先检查实际活跃构建；已有构建就直接跳过。空闲时只运行最窄任务并限制并发，超时只取消 Codex 本次调用，不停止共享 daemon。
 - 运行 Gradle 前先确认目标模块真实存在的 task 名；若出现 `Task not found`、flavor/buildType 变化或命令不确定，先读 `settings.gradle*` 与目标模块 `build.gradle*`，必要时运行 `.\\gradlew.bat :<module>:tasks --all` 枚举后再选择。
-- Android 单测过滤优先使用 `--tests '*TargetTest*'` 通配形式。"""
+- Android 单测过滤优先使用 `--tests '*TargetTest*'` 通配形式。
+- 导入/导出规则包后必须跑 AndroidEasyRules validator 和一次 `--dry-run --strict`；健康评分应达到 `A+` 或更高，否则继续修正规则完整性、占位符、来源污染、索引命名和幂等问题。"""
 
 
 def generated_root_section(values: dict[str, str]) -> str:

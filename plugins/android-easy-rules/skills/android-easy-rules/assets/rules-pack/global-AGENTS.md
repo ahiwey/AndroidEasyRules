@@ -28,6 +28,8 @@
 - shell 外部命令优先用 `rtk` 包装，例如 `rtk git status`、`rtk rg "keyword"`、`rtk .\gradlew.bat :app:assembleDebug`。
 - PowerShell 内置命令不要直接套 `rtk`；确需过滤输出时使用 `rtk powershell -NoProfile -Command "..."`。
 - 默认不进行编译校验；只有用户明确要求，或完成任务实际需要时才执行编译。
+- 用户要求 Android Studio 构建优先或允许 Codex 超时跳过时，运行 Gradle 前先短时检查是否已有实际执行中的 Gradle 构建；常驻但空闲的 daemon 不算活跃构建。检测到活跃构建就直接跳过并说明，不排队争抢资源。
+- 空闲时确需运行 Gradle，只运行最窄任务并限制并发；超时后只取消 Codex 本次启动的任务，不执行 `gradlew --stop`、`clean`，也不结束来源不明的 Java/Gradle 进程。
 - 修改后按影响范围运行最小验证。文档和规则修改通常不需要构建，但要检查文件内容和差异。
 
 @C:\Users\11587\.codex\RTK.md
