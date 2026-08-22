@@ -6,7 +6,24 @@
 - 默认以“少读、准找、可验证”为工作原则：先确认任务类型和影响范围，再按最小上下文定位，不为“了解项目”全量扫描。
 - 本文件是项目级总入口，不是 README、业务文档或完整源码索引；只放跨项目硬规则、任务路由、修改边界和验证策略。
 - 文件请保存为 UTF-8，避免中文规则在终端或工具中乱码。
-- `AGENTS.md` 是唯一完整项目规则源；可以生成薄 `CLAUDE.md` 作为 Claude Code 入口，但不得复制两套会漂移的完整规则。
+- `AGENTS.md` 是唯一完整项目规则源；其他 AI 只使用原生兼容或指向它的薄入口，不得复制会漂移的完整规则。
+
+## 任务澄清与交付闭环
+
+- 开始任务前先判断背景、痛点、需求和成功标准是否清楚；缺少会改变实现或验收结果的关键信息时，使用苏格拉底式提问，每轮只问一个问题，直到足以执行。
+- 能从文件、配置、代码或当前环境查明的事实先自行查证。用户明确要求不提问，或意图与成功标准已经完整时，直接执行，不机械追问。
+- 新建文件或产物时，如果用户未指定目录，当前任务上下文也没有明确的既存目标目录，写入前先询问保存位置；不得默认写入 AI 缓存、临时目录或默认输出目录。用户已指定目录，或任务是在现有目录和文件中修改时，不重复询问。
+- 每次完成修改、文件、方案或分析结论等实质交付后，在最终回复正文询问结果是否满足需求，并说明不满意时可以指出问题继续迭代；纯闲聊和简短事实回答无需询问。不得为此使用终端弹框或选项工具。
+- 多文件修改、外部调研、构建测试、长文档或多轮工具操作等明显耗时或耗 Token 的任务完成后，在最终回复正文提示可以继续优化，或把可复用流程沉淀为 Skill；只提示，不自动创建 Skill，也不得为此使用终端弹框或选项工具。
+
+## 推理与决策方法路由
+
+- 只在方法可能改变结果时启用，不在明确、简单的任务上机械套流程；用户指定方法时以用户要求为准。
+- 解释陌生概念使用双层解释；学习优秀范例使用反向拆解；系统调研使用横纵分析；核验说法时分离事实、推断与价值判断并执行事实核查。
+- 复杂方案可使用互补专家视角、第一性原理或跨领域借解；二选一决策使用双向钢人；继续讨论已无法降低不确定性时设计最小可逆实验。
+- 专家视角默认在当前回答内完成，不自动创建子代理；只有用户明确要求子代理、委派或并行 Agent 工作时才使用。
+- 隐藏天赋和人生设计仅在用户明确要求时启用，不作为心理诊断，也不根据少量回答给用户贴标签。
+- 需要完整步骤、停止条件和输出结构时，读取 `AGENTS/reasoning-playbooks.md`；输出长度按用户要求和任务复杂度决定。
 
 ## AndroidEasyRules 更新入口
 
@@ -14,7 +31,7 @@
 - 当用户明确要求“更新 AndroidEasyRules”“导入最新版规则”或点名 `ahiwey/AndroidEasyRules` 时，再从 GitHub 拉取最新版并导入当前项目。
 - 推荐缓存目录为 `%USERPROFILE%\.codex\cache\AndroidEasyRules`；如目录已存在，运行 `rtk git -C "%USERPROFILE%\.codex\cache\AndroidEasyRules" pull --ff-only`，否则运行 `rtk git clone https://github.com/ahiwey/AndroidEasyRules.git "%USERPROFILE%\.codex\cache\AndroidEasyRules"`。
 - 拉取后运行 `rtk python "%USERPROFILE%\.codex\cache\AndroidEasyRules\plugins\android-easy-rules\skills\android-easy-rules\scripts\import_android_easy_rules.py" <当前项目根目录>`。
-- 导入后至少检查 `AGENTS.md`、`CLAUDE.md`、`MEMORY.md` 和 app 模块规则可用 UTF-8 读取，并确认没有未替换的模板占位符或源规则仓库路径残留。
+- 导入后至少检查 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`.github/copilot-instructions.md`、`MEMORY.md` 和 app 模块规则可用 UTF-8 读取，并确认没有未替换的模板占位符或源规则仓库路径残留。
 
 ## 协作偏好
 
@@ -94,7 +111,8 @@
 - `AGENTS.md`：跨项目硬规则、工具路由、修改边界、验证矩阵、禁止事项。
 - `MEMORY.md`：业务与目录索引，只回答“先去哪找”和“哪些地方要小心”。
 - 模块 `AGENTS.md`：模块定位、技术约定、资源/协议/构建规则和模块特有风险。
-- `CLAUDE.md`：默认只作为指向 `AGENTS.md` 的薄入口，不复制完整项目规则。
+- `CLAUDE.md`、`GEMINI.md`、`.github/copilot-instructions.md`：只作为指向 `AGENTS.md` 的薄入口，不复制完整项目规则。
+- Kimi Code、Qoder 和未配置 `CODEBUDDY.md` 的 CodeBuddy 直接读取 `AGENTS.md`；目标项目已有 `CODEBUDDY.md` 时，只向其中合并指向 `AGENTS.md` 的标记段。
 
 规则应短、具体、不可从代码自然推断。不要把完整业务历史、文件树、API 文档、泛泛而谈的“保持整洁”等低密度内容塞进 `AGENTS.md`。
 
@@ -135,6 +153,7 @@
 
 ## 必用规则文件
 
+- 解释、研究、事实核查、复杂问题、决策、最小实验或用户明确要求自我探索：参考 `AGENTS/reasoning-playbooks.md`。
 - 截图/效果图/UI 设计图任务：参考 `AGENTS/screenshot-ui-rules.md`。
 - 图片、图标、drawable、mipmap 资源任务：参考 `AGENTS/image-resource-rules.md`。
 - 自定义 View、Canvas、图表任务：参考 `AGENTS/custom-view-chart-rules.md`。

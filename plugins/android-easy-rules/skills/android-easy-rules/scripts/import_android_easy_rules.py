@@ -14,6 +14,7 @@ MARKER_END = "<!-- ANDROID_EASY_RULES_END -->"
 
 RULE_FILES = [
     "karpathy-guidelines.md",
+    "reasoning-playbooks.md",
     "commit-migration-rules.md",
     "screenshot-ui-rules.md",
     "image-resource-rules.md",
@@ -25,6 +26,8 @@ RULE_FILES = [
     "neat-freak-rules.md",
     "r8-proguard-rules.md",
 ]
+
+GLOBAL_HOSTS = ("codex", "claude", "workbuddy")
 
 PLACEHOLDER_PATTERNS = (
     "<填写主",
@@ -532,8 +535,14 @@ def fill_template(text: str, values: dict[str, str]) -> str:
 def generated_agents_section() -> str:
     return """## AndroidEasyRules 导入补充
 
-- `AGENTS.md` 是 Codex 的唯一完整项目规则源。
-- Claude Code 读取 `CLAUDE.md`，但 `CLAUDE.md` 只作为薄入口指向 `AGENTS.md`。
+- `AGENTS.md` 是唯一完整项目规则源；Codex、Kimi Code、Qoder 和未配置 `CODEBUDDY.md` 的 CodeBuddy 直接读取它。
+- Claude Code、Gemini CLI 和 GitHub Copilot 使用薄入口读取 `AGENTS.md`，不得复制完整规则；目标项目已有 `CODEBUDDY.md` 时，只在其中合并指向 `AGENTS.md` 的标记段。
+- 开始任务前先判断背景、痛点、需求和成功标准是否清楚；缺少会改变实现或验收结果的关键信息时，使用苏格拉底式提问，每轮只问一个问题。能自行查明的事实先查证；用户要求不提问或意图已经完整时直接执行。
+- 解释陌生概念使用双层解释；学习范例使用反向拆解；系统调研使用横纵分析；核验说法时执行事实核查；复杂方案按需使用互补专家视角、第一性原理或跨领域借解；二选一决策使用双向钢人；不确定性无法继续靠讨论降低时设计最小可逆实验。完整步骤见 `AGENTS/reasoning-playbooks.md`。
+- 专家视角默认在当前回答内完成，不自动创建子代理；只有用户明确要求子代理、委派或并行 Agent 工作时才使用。隐藏天赋和人生设计仅在用户明确要求时启用，不作为心理诊断。
+- 新建文件或产物时，如果用户未指定目录且当前上下文没有明确的既存目标目录，写入前先询问保存位置；不得默认写入 AI 缓存、临时目录或默认输出目录。已指定目录或修改现有目录时不重复询问。
+- 每次实质交付后，在最终回复正文询问结果是否满足需求，并说明可以继续迭代；纯闲聊和简短事实回答除外。不得为此使用终端弹框或选项工具。
+- 多文件修改、外部调研、构建测试、长文档或多轮工具操作等明显耗时或耗 Token 的任务完成后，在最终回复正文提示可以继续优化或沉淀为 Skill；只提示，不自动创建 Skill，也不得为此使用终端弹框或选项工具。
 - 业务定位先按关键词查 `MEMORY.md`，结构定位用 CodeGraph，固定文本和资源名用 `rg`。
 - 默认不进行编译校验；只有用户明确要求，或完成任务实际需要时才执行编译。
 - 在满足全局编译条件后，是否补跑 assemble 由代理按影响范围自主判断，不把 assemble 机械作为每次局部逻辑改动的完成条件。
@@ -594,6 +603,77 @@ Claude Code should:
 - Avoid duplicating or drifting rules between `CLAUDE.md` and `AGENTS.md`.
 - When updating project rules, update `AGENTS.md` and keep this file thin.
 """
+
+
+def gemini_entry() -> str:
+    return """# GEMINI.md
+
+This project uses `AGENTS.md` as the canonical AI-agent rule source.
+
+@./AGENTS.md
+
+Keep this file as a thin entrypoint. Update project rules in `AGENTS.md` only.
+"""
+
+
+def copilot_entry() -> str:
+    return """# GitHub Copilot Instructions
+
+This project uses `AGENTS.md` as the canonical AI-agent rule source.
+
+@../AGENTS.md
+
+Keep this file as a thin entrypoint. Update project rules in `AGENTS.md` only.
+"""
+
+
+def codebuddy_entry() -> str:
+    return """## AndroidEasyRules rule source
+
+Use the project-root `AGENTS.md` as the canonical complete AI-agent rule source. Keep `CODEBUDDY.md` as a thin entrypoint and update shared rules only in `AGENTS.md`.
+"""
+
+
+def global_rules_section(rules_pack: Path) -> str:
+    lines = read_text(rules_pack / "global-AGENTS.md").strip().splitlines()
+    if lines and lines[0].startswith("# "):
+        lines = lines[1:]
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    return "\n".join(lines).strip()
+
+
+def global_rule_paths(user_home: Path) -> dict[str, tuple[Path, str]]:
+    return {
+        "codex": (user_home / ".codex" / "AGENTS.md", "# AGENTS.md"),
+        "claude": (user_home / ".claude" / "CLAUDE.md", "# CLAUDE.md"),
+        "workbuddy": (user_home / ".codebuddy" / "CODEBUDDY.md", "# CODEBUDDY.md"),
+    }
+
+
+def merge_thin_entrypoint(
+    path: Path,
+    entry: str,
+    dry_run: bool,
+    *,
+    create_if_missing: bool = True,
+) -> None:
+    if not path.exists():
+        if create_if_missing:
+            write_text(path, entry.rstrip() + "\n", dry_run)
+        return
+
+    original = read_text(path)
+    pattern = re.compile(
+        rf"{re.escape(MARKER_START)}.*?{re.escape(MARKER_END)}",
+        re.DOTALL,
+    )
+    if original.strip() == entry.strip():
+        return
+    if pattern.search(original) and not pattern.sub("", original).strip():
+        write_text(path, entry.rstrip() + "\n", dry_run)
+        return
+    merge_marked_file(path, entry, entry, dry_run)
 
 
 def copy_rule_files(rules_pack: Path, target: Path, dry_run: bool) -> None:
@@ -674,6 +754,9 @@ def validate_generated_texts(
         "AGENTS.md": root_text,
         "MEMORY.md": memory_text,
         "CLAUDE.md": claude_entry(),
+        "GEMINI.md": gemini_entry(),
+        ".github/copilot-instructions.md": copilot_entry(),
+        "CODEBUDDY.md": codebuddy_entry(),
     }
     app_template = rules_pack / "android-app-AGENTS.template.md"
     if app_template.exists():
@@ -692,7 +775,41 @@ def validate_generated_texts(
         raise ValueError("Generated rules contain unsafe leftovers: " + "; ".join(issues))
 
 
-def import_rules(target: Path, rules_pack: Path, dry_run: bool, strict: bool = False) -> None:
+def sync_global_rules(
+    rules_pack: Path,
+    hosts: list[str] | tuple[str, ...],
+    dry_run: bool,
+    strict: bool = False,
+    user_home: Path | None = None,
+) -> None:
+    if not hosts:
+        return
+
+    unknown = [host for host in hosts if host not in GLOBAL_HOSTS]
+    if unknown:
+        raise ValueError("Unsupported global host: " + ", ".join(unknown))
+
+    section = global_rules_section(rules_pack)
+    issues = warn_if_generated_text_has_issues("global user rules", section, rules_pack)
+    if strict and issues:
+        raise ValueError("Global rules contain unsafe leftovers: " + "; ".join(issues))
+
+    resolved_home = (user_home or Path.home()).resolve()
+    paths = global_rule_paths(resolved_home)
+    for host in dict.fromkeys(hosts):
+        path, heading = paths[host]
+        merge_marked_file(path, heading, section, dry_run)
+        print(f"[global] host={host} path={path}")
+
+
+def import_rules(
+    target: Path,
+    rules_pack: Path,
+    dry_run: bool,
+    strict: bool = False,
+    global_hosts: list[str] | tuple[str, ...] = (),
+    user_home: Path | None = None,
+) -> None:
     modules = detect_modules(target)
     app_module = detect_app_module(target, modules)
     values = detect_android_values(target, app_module)
@@ -702,22 +819,15 @@ def import_rules(target: Path, rules_pack: Path, dry_run: bool, strict: bool = F
     validate_generated_texts(rules_pack, values, root_template, memory_template, strict=strict)
 
     merge_marked_file(target / "AGENTS.md", root_template, generated_root_section(values), dry_run)
-    claude_path = target / "CLAUDE.md"
-    if not claude_path.exists():
-        write_text(claude_path, claude_entry(), dry_run)
-    else:
-        claude_text = read_text(claude_path)
-        marker_pattern = re.compile(
-            rf"{re.escape(MARKER_START)}.*?{re.escape(MARKER_END)}",
-            re.DOTALL,
-        )
-        without_generated_entry = marker_pattern.sub("", claude_text).strip()
-        if claude_text.strip() == claude_entry().strip():
-            pass
-        elif without_generated_entry == claude_entry().strip():
-            write_text(claude_path, claude_entry(), dry_run)
-        elif claude_text.strip() != claude_entry().strip():
-            merge_marked_file(claude_path, claude_entry(), claude_entry(), dry_run)
+    merge_thin_entrypoint(target / "CLAUDE.md", claude_entry(), dry_run)
+    merge_thin_entrypoint(target / "GEMINI.md", gemini_entry(), dry_run)
+    merge_thin_entrypoint(target / ".github" / "copilot-instructions.md", copilot_entry(), dry_run)
+    merge_thin_entrypoint(
+        target / "CODEBUDDY.md",
+        codebuddy_entry(),
+        dry_run,
+        create_if_missing=False,
+    )
     merge_marked_file(target / "MEMORY.md", memory_template, generated_memory_section(values), dry_run)
     missing_rules = [name for name in RULE_FILES if not (rules_pack / name).exists()]
     if missing_rules:
@@ -727,11 +837,32 @@ def import_rules(target: Path, rules_pack: Path, dry_run: bool, strict: bool = F
         print(f"[warning] {message}")
     copy_rule_files(rules_pack, target, dry_run)
     copy_module_rules(rules_pack, target, app_module, values, dry_run)
+    sync_global_rules(
+        rules_pack,
+        global_hosts,
+        dry_run,
+        strict=strict,
+        user_home=user_home,
+    )
 
     print("[summary]")
     print(f"target={target}")
     print(f"modules={values['modules']}")
     print(f"app_module={app_module or 'not-detected'}")
+    print(f"global_hosts={','.join(global_hosts) if global_hosts else 'none'}")
+
+
+def parse_global_hosts(value: str) -> list[str]:
+    hosts = list(dict.fromkeys(part.strip().lower() for part in value.split(",") if part.strip()))
+    unknown = [host for host in hosts if host not in GLOBAL_HOSTS]
+    if unknown:
+        raise ValueError(
+            "Unsupported --global-hosts value: "
+            + ", ".join(unknown)
+            + ". Expected any of: "
+            + ", ".join(GLOBAL_HOSTS)
+        )
+    return hosts
 
 
 def main() -> int:
@@ -745,6 +876,12 @@ def main() -> int:
     )
     parser.add_argument("--dry-run", action="store_true", help="Print actions without writing files.")
     parser.add_argument(
+        "--global-hosts",
+        default="",
+        metavar="HOSTS",
+        help="Also merge user-level rules for comma-separated hosts: codex,claude,workbuddy.",
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="Fail on missing bundled rules or unfilled generated placeholders.",
@@ -757,7 +894,17 @@ def main() -> int:
         raise SystemExit(f"Target does not exist: {target}")
     if not rules_pack.exists():
         raise SystemExit(f"Rules pack does not exist: {rules_pack}")
-    import_rules(target, rules_pack, args.dry_run, strict=args.strict)
+    try:
+        global_hosts = parse_global_hosts(args.global_hosts)
+    except ValueError as exc:
+        parser.error(str(exc))
+    import_rules(
+        target,
+        rules_pack,
+        args.dry_run,
+        strict=args.strict,
+        global_hosts=global_hosts,
+    )
     return 0
 
 

@@ -13,13 +13,15 @@
 - “导入 AndroidEasyRules 插件”
 - “从 `ahiwey/AndroidEasyRules` 更新规则”
 - “从 `https://github.com/ahiwey/AndroidEasyRules.git` 导入最新版规则”
-- “生成 Codex 的 AGENTS.md 和 Claude Code 的 CLAUDE.md”
+- “生成 Codex 的 AGENTS.md 和 Claude、Gemini、GitHub Copilot 的薄入口”
+- “同步 Codex、Claude、WorkBuddy 的个人全局规则”
 
 ## 总原则
 
 - 导入规则时必须适配目标项目，不要机械复制。
 - 从 GitHub 更新规则必须由用户明确触发；不要在打开项目或会话启动时无确认自动拉取并写入文件。
-- 目标项目已有 `AGENTS.md`、`CLAUDE.md`、`MEMORY.md` 或模块规则时，必须先读取并合并，不要覆盖用户已有偏好。
+- 个人全局规则同步默认关闭；只有用户明确要求并传入 `--global-hosts` 时才修改用户目录，先用 `--dry-run --strict` 预览。
+- 目标项目已有 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、`.github/copilot-instructions.md`、`CODEBUDDY.md`、`MEMORY.md` 或模块规则时，必须先读取并合并，不要覆盖用户已有偏好。
 - 保留目标项目自己的协作偏好、语言要求、测试偏好、构建命令、模块职责和安全约束。
 - 模板中的占位符必须替换为目标项目实际信息。
 - 不要把源项目名称、源分支名、源包名、源 flavor、具体业务索引或品牌资源写入其他项目，除非目标项目确实使用它们。
@@ -36,14 +38,14 @@
 - 资源目录：`layout`、`drawable`、`mipmap*`、`values*`、`assets`。
 - 是否存在 BLE、SDK、本地 AAR/JAR、Chat UI、skin/theme、WebView/JSBridge、Health/Google/Firebase 等模块。
 - 是否已有测试目录和常用测试任务。
-- 是否已有 `AGENTS.md`、`MEMORY.md`、`CLAUDE.md`、`GEMINI.md` 或其他规则文件。
+- 是否已有 `AGENTS.md`、`MEMORY.md`、`CLAUDE.md`、`GEMINI.md`、`.github/copilot-instructions.md`、`CODEBUDDY.md` 或其他规则文件。
 
 ## 导入步骤
 
 1. 读取本目录 `README.md` 和 `IMPORT.md`。
 2. 查看目标项目已有规则文件，提取用户偏好和硬约束。
 3. 如果用户要求从 GitHub 最新版更新，先 clone/pull `https://github.com/ahiwey/AndroidEasyRules.git` 到本地缓存目录，再从缓存仓库运行 importer；不要把缓存仓库路径写入目标项目规则。
-4. 如用户要求同步个人全局规则，参考 `global-AGENTS.md` 合并到用户级 `~/.codex/AGENTS.md`；不要把项目业务索引写进全局规则。
+4. 如用户要求同步个人全局规则，使用 `--global-hosts codex,claude,workbuddy`，从 `global-AGENTS.md` 合并标记段；不要把项目业务索引写进全局规则。
 5. 根据目标项目结构选择模板：
    - 根规则：`root-AGENTS.template.md`
    - 主 app：`android-app-AGENTS.template.md`
@@ -56,6 +58,7 @@
 7. 生成或合并 `MEMORY.md`。
 8. 给重要模块生成或合并模块级 `AGENTS.md`。
 9. 保留独立规则文件到目标项目的 `AGENTS/` 目录：
+   - `reasoning-playbooks.md`
    - `commit-migration-rules.md`
    - `screenshot-ui-rules.md`
    - `image-resource-rules.md`
@@ -68,14 +71,22 @@
    - `r8-proguard-rules.md`
 10. 替换所有占位符。
 11. 检查生成内容是否仍包含源项目名称、源包名、源 flavor、真实本地缓存路径或无关业务；`%USERPROFILE%` 这类泛化变量可用于 GitHub 更新说明。
-12. 普通手动导入以 `AGENTS.md` 为唯一完整规则源；插件导入时生成或合并 `CLAUDE.md` 薄入口，说明 Claude Code 读取 `AGENTS.md`，不复制完整项目规则。
+12. 以 `AGENTS.md` 为唯一完整规则源；生成或合并 `CLAUDE.md`、`GEMINI.md` 和 `.github/copilot-instructions.md` 薄入口。`CODEBUDDY.md` 不存在时不创建，存在时只合并指向 `AGENTS.md` 的标记段。
 13. 最终说明生成了哪些文件、哪些规则来自已有项目、哪些需要用户确认。
+
+## 多 AI 入口约定
+
+- Codex、Kimi Code、Qoder 和未配置 `CODEBUDDY.md` 的 CodeBuddy 直接读取根 `AGENTS.md`。
+- Claude Code 使用薄 `CLAUDE.md`；Gemini CLI 使用包含 `@./AGENTS.md` 的薄 `GEMINI.md`；GitHub Copilot 使用 `.github/copilot-instructions.md` 引用根规则。
+- WorkBuddy/CodeBuddy 在项目根没有 `CODEBUDDY.md` 时兼容加载 `AGENTS.md`；已有 `CODEBUDDY.md` 时，只合并指向 `AGENTS.md` 的标记段。
+- importer 默认只修改目标项目。显式传入 `--global-hosts` 后，才按选择合并 `%USERPROFILE%\.codex\AGENTS.md`、`%USERPROFILE%\.claude\CLAUDE.md`、`%USERPROFILE%\.codebuddy\CODEBUDDY.md`。
 
 ## AGENTS.md 适配要求
 
 根 `AGENTS.md` 应包含：
 
 - 沟通语言和协作偏好。
+- 高频推理与决策方法路由，以及 `AGENTS/reasoning-playbooks.md` 完整方法入口。
 - `MEMORY.md` 先行检索规则。
 - 模块级 `AGENTS.md` 优先规则。
 - CodeGraph 与 `rg` 的使用边界。
@@ -85,7 +96,7 @@
 - 洁癖/知识收尾规则入口，明确规则同步不等于自动清场。
 - 测试与构建规则入口。
 - 修改边界和禁止项。
-- 明确 `AGENTS.md` 是唯一完整项目规则源，`CLAUDE.md` 只作为 Claude Code 薄入口。
+- 明确 `AGENTS.md` 是唯一完整项目规则源，所有厂商入口只引用它，不复制完整规则。
 
 不要把全部业务索引塞进根 `AGENTS.md`；业务索引放入 `MEMORY.md`。
 

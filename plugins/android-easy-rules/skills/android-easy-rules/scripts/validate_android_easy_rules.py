@@ -32,6 +32,14 @@ def write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8", newline="\n")
 
 
+def snapshot_tree(root: Path) -> dict[str, bytes]:
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
 def validate_static_pack() -> None:
     skill_text = read(SKILL_DIR / "SKILL.md")
     fast_workflow = read(PLUGIN_SKILLS_DIR / "android-fast-workflow" / "SKILL.md")
@@ -58,14 +66,54 @@ def validate_static_pack() -> None:
     testing_rules = read(PACK_DIR / "testing-build-rules.md")
     screenshot_rules = read(PACK_DIR / "screenshot-ui-rules.md")
     custom_view_rules = read(PACK_DIR / "custom-view-chart-rules.md")
+    reasoning_rules = read(PACK_DIR / "reasoning-playbooks.md")
     memory_template = read(PACK_DIR / "MEMORY.template.md")
     import_rules = read(PACK_DIR / "IMPORT.md")
     readme = read(PACK_DIR / "README.md")
+
+    collaboration_tokens = (
+        "苏格拉底式提问",
+        "默认写入 AI 缓存",
+        "实质交付",
+        "沉淀为 Skill",
+    )
+    for text, label in (
+        (global_rules, "global-AGENTS.md"),
+        (root_rules, "root-AGENTS.template.md"),
+        (importer.generated_agents_section(), "generated_agents_section"),
+    ):
+        for token in collaboration_tokens:
+            require(token in text, f"collaboration loop token is missing from {label}: {token}")
 
     for text in (global_rules, root_rules):
         require("`gpt-5.5`" in text, "gpt-5.5 Superpowers routing is missing")
         require("`gpt-5.6`" in text and "`superpowers:*`" in text, "gpt-5.6 Superpowers exclusion is missing")
         require("不自动安装或调用 `grill-me`" in text, "grill-me opt-out is missing")
+
+    reasoning_methods = (
+        "苏格拉底式提问",
+        "双层解释法",
+        "反向拆解",
+        "横纵分析法",
+        "事实核查",
+        "专家视角会诊",
+        "第一性原理",
+        "跨领域借解",
+        "双向钢人论证",
+        "最小实验",
+        "隐藏天赋探索",
+        "人生设计",
+    )
+    for method in reasoning_methods:
+        require(method in reasoning_rules, f"reasoning playbook is missing: {method}")
+    require("仅在用户明确要求" in reasoning_rules, "sensitive self-exploration opt-in is missing")
+    require("不自动创建子代理" in reasoning_rules, "expert-view delegation boundary is missing")
+    require("AGENTS/reasoning-playbooks.md" in root_rules, "root reasoning route is missing")
+    require(
+        "AGENTS/reasoning-playbooks.md" in importer.generated_agents_section(),
+        "generated reasoning route is missing",
+    )
+    require("推理与决策方法路由" in global_rules, "global reasoning route is missing")
 
     require("Quick 默认预算" in root_rules, "Quick execution budget is missing")
     require("用户称呼与索引对齐" in root_rules, "index naming alignment rule is missing")
@@ -85,9 +133,26 @@ def validate_static_pack() -> None:
     require("不加载通用 UI/UX 流程" in custom_view_rules, "custom View Quick routing is missing")
     for text, label in ((import_rules, "IMPORT.md"), (readme, "README.md")):
         require("A+" in text and "health" in text.lower() or "健康评分" in text, f"A+ health scoring guidance is missing in {label}")
+        require("WorkBuddy" in text and "AGENTS.md" in text, f"WorkBuddy import guidance is missing in {label}")
+        require("暂无已验证" not in text, f"outdated WorkBuddy guidance remains in {label}")
+        require("--global-hosts" in text and ".codebuddy" in text, f"global host guidance is missing in {label}")
+
+    require("@./AGENTS.md" in importer.gemini_entry(), "Gemini thin entrypoint is invalid")
+    require("@../AGENTS.md" in importer.copilot_entry(), "Copilot thin entrypoint is invalid")
+    require("AGENTS.md" in importer.codebuddy_entry(), "CodeBuddy thin entrypoint is invalid")
+    require(
+        importer.parse_global_hosts("codex,claude,workbuddy,codex") == ["codex", "claude", "workbuddy"],
+        "global host parsing or deduplication is invalid",
+    )
+    try:
+        importer.parse_global_hosts("unknown")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("unsupported global host was accepted")
 
     source_specific = re.compile(
-        r"E:\\工作相关|D:\\Project\\(?:Android|SDKSample)|app_android_2025|Lib_SDK_BLE|ringchatkit|QRing_00[34]",
+        r"E:\\工作相关|D:\\Project\\(?:Android|SDKSample)|C:\\Users\\(?!<)[^\\\r\n]+|app_android_2025|Lib_SDK_BLE|ringchatkit|QRing_00[34]",
         re.IGNORECASE,
     )
     for path in PACK_DIR.glob("*.md"):
@@ -101,6 +166,7 @@ def validate_static_pack() -> None:
     openai = read(SKILL_DIR / "agents" / "openai.yaml")
     for key in ("display_name:", "short_description:", "default_prompt:"):
         require(key in openai, f"agents/openai.yaml is missing {key}")
+    require("$android-easy-rules" in openai, "agents/openai.yaml default prompt must invoke the skill")
 
 
 def create_fixture(root: Path) -> None:
@@ -187,6 +253,10 @@ def validate_fixture_import() -> None:
     with TemporaryDirectory(prefix="android-easy-rules-") as temp:
         target = Path(temp)
         create_fixture(target)
+        before_dry_run = snapshot_tree(target)
+        importer.import_rules(target, PACK_DIR, dry_run=True, strict=True)
+        require(before_dry_run == snapshot_tree(target), "dry-run modified the fixture")
+
         importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
 
         root_agents = read(target / "AGENTS.md")
@@ -207,7 +277,19 @@ def validate_fixture_import() -> None:
         for module in ("app", "ble-core", "chatkit", "skin-support", "common"):
             require((target / module / "AGENTS.md").is_file(), f"module rule missing: {module}")
 
-        generated_files = [target / "AGENTS.md", target / "CLAUDE.md", target / "MEMORY.md"]
+        generated_files = [
+            target / "AGENTS.md",
+            target / "CLAUDE.md",
+            target / "GEMINI.md",
+            target / ".github" / "copilot-instructions.md",
+            target / "MEMORY.md",
+        ]
+        require(not (target / "CODEBUDDY.md").exists(), "CODEBUDDY.md should not be created when absent")
+        require(read(target / "GEMINI.md").count("@./AGENTS.md") == 1, "Gemini entrypoint is not thin")
+        require(
+            read(target / ".github" / "copilot-instructions.md").count("@../AGENTS.md") == 1,
+            "Copilot entrypoint is not thin",
+        )
         generated_files.extend(target / path for path in expected_rules)
         generated_files.extend(target / module / "AGENTS.md" for module in ("app", "ble-core", "chatkit", "skin-support", "common"))
         for path in generated_files:
@@ -221,6 +303,80 @@ def validate_fixture_import() -> None:
         changed = [str(path.relative_to(target)) for path in generated_files if before[path] != after[path]]
         require(before == after, "second import is not idempotent: " + ", ".join(changed))
         require(root_agents.count(importer.MARKER_START) == 1, "root AGENTS marker was duplicated")
+
+
+def validate_existing_entrypoint_merge() -> None:
+    with TemporaryDirectory(prefix="android-easy-rules-entrypoints-") as temp:
+        target = Path(temp)
+        create_fixture(target)
+        seeded = {
+            target / "CLAUDE.md": "# Existing Claude rules\n\nKeep this project-specific note.\n",
+            target / "GEMINI.md": "# Existing Gemini rules\n\nKeep this project-specific note.\n",
+            target / ".github" / "copilot-instructions.md": "# Existing Copilot rules\n\nKeep this project-specific note.\n",
+            target / "CODEBUDDY.md": "# Existing CodeBuddy rules\n\nKeep this project-specific note.\n",
+        }
+        for path, content in seeded.items():
+            write(path, content)
+
+        importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+        entrypoint_paths = list(seeded)
+        for path, original in seeded.items():
+            merged = read(path)
+            require(original.strip() in merged, f"existing entrypoint content was lost: {path.name}")
+            require(merged.count(importer.MARKER_START) == 1, f"entrypoint marker count is invalid: {path.name}")
+            require("AGENTS.md" in merged, f"canonical rule source is missing: {path.name}")
+
+        before = {path: read(path) for path in entrypoint_paths}
+        importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+        after = {path: read(path) for path in entrypoint_paths}
+        require(before == after, "existing entrypoint merge is not idempotent")
+
+
+def validate_global_rule_sync() -> None:
+    with TemporaryDirectory(prefix="android-easy-rules-global-") as temp:
+        user_home = Path(temp)
+        paths = importer.global_rule_paths(user_home)
+        seeded = {
+            paths["codex"][0]: "# Existing Codex rules\n\nKeep Codex preference.\n",
+        }
+        for path, content in seeded.items():
+            write(path, content)
+
+        before_dry_run = snapshot_tree(user_home)
+        importer.sync_global_rules(
+            PACK_DIR,
+            list(importer.GLOBAL_HOSTS),
+            dry_run=True,
+            strict=True,
+            user_home=user_home,
+        )
+        require(before_dry_run == snapshot_tree(user_home), "global dry-run modified user rules")
+
+        importer.sync_global_rules(
+            PACK_DIR,
+            list(importer.GLOBAL_HOSTS),
+            dry_run=False,
+            strict=True,
+            user_home=user_home,
+        )
+        for host, (path, heading) in paths.items():
+            merged = read(path)
+            if path in seeded:
+                require(seeded[path].strip() in merged, f"existing global rules were lost: {path}")
+            else:
+                require(merged.startswith(heading), f"new global rule heading is invalid: {host}")
+            require(merged.count(importer.MARKER_START) == 1, f"global marker count is invalid: {path}")
+            require("推理与决策方法路由" in merged, f"reasoning routes are missing: {path}")
+
+        before = snapshot_tree(user_home)
+        importer.sync_global_rules(
+            PACK_DIR,
+            list(importer.GLOBAL_HOSTS),
+            dry_run=False,
+            strict=True,
+            user_home=user_home,
+        )
+        require(before == snapshot_tree(user_home), "global rule sync is not idempotent")
 
 
 def validate_multidimension_flavor_import() -> None:
@@ -251,6 +407,12 @@ def health_report() -> tuple[int, str]:
             "截图识别提效" in read(PACK_DIR / "screenshot-ui-rules.md"),
             "编译速度优化" in read(PACK_DIR / "testing-build-rules.md"),
             "A+" in importer.generated_agents_section(),
+            "苏格拉底式提问" in importer.generated_agents_section(),
+            "reasoning-playbooks.md" in importer.generated_agents_section(),
+            "隐藏天赋探索" in read(PACK_DIR / "reasoning-playbooks.md"),
+            set(importer.GLOBAL_HOSTS) == {"codex", "claude", "workbuddy"},
+            "@./AGENTS.md" in importer.gemini_entry(),
+            "@../AGENTS.md" in importer.copilot_entry(),
         ]
     )
     score = round(sum(1 for passed in checks if passed) / len(checks) * 100)
@@ -268,6 +430,8 @@ def health_report() -> tuple[int, str]:
 def main() -> int:
     validate_static_pack()
     validate_fixture_import()
+    validate_existing_entrypoint_merge()
+    validate_global_rule_sync()
     validate_multidimension_flavor_import()
     score, grade = health_report()
     require(grade == "A+", f"health grade is below A+: score={score} grade={grade}")

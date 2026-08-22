@@ -1,4 +1,4 @@
 interface:
   display_name: "Android Easy Rules"
-  short_description: "Import Android AGENTS rules and fast task workflow."
-  default_prompt: "Import AndroidEasyRules into this Android project, or import a compatible AGENTS rules-pack path, generate AGENTS.md and CLAUDE.md, and use android-fast-workflow for faster indexing, screenshot recognition, and compile verification choices."
+  short_description: "Import Android AI rules and reasoning playbooks."
+  default_prompt: "Use $android-easy-rules to import canonical AGENTS.md rules, reasoning playbooks, and thin vendor entrypoints into this Android project; sync Codex, Claude, or WorkBuddy user rules only when explicitly requested."

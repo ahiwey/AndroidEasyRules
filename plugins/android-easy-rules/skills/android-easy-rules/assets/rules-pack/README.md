@@ -23,8 +23,16 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 也可以安装 `AndroidEasyRules` 插件后直接说：
 
 ```text
-导入 AndroidEasyRules 插件，并为当前 Android 项目生成 AGENTS.md 和 CLAUDE.md。
+导入 AndroidEasyRules 插件，并为当前 Android 项目生成唯一完整的 AGENTS.md，以及 Claude、Gemini、GitHub Copilot 的薄入口。
 ```
+
+如需在同次导入中同步个人全局规则，必须由用户明确要求，并使用：
+
+```powershell
+python scripts/import_android_easy_rules.py <目标项目根目录> --global-hosts codex,claude,workbuddy --dry-run --strict
+```
+
+确认 dry-run 路径和内容后再去掉 `--dry-run`。未提供 `--global-hosts` 时，importer 不修改任何用户级规则。
 
 ## 给 AI 的导入协议
 
@@ -43,7 +51,11 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 - 是否已有 AGENTS.md、MEMORY.md 或其他项目规则
 
 不要把源项目的业务索引、包名、品牌资源、构建命令或分支记忆原样复制到其他项目。
-普通规则包以 `AGENTS.md` 为唯一完整规则源。插件导入模式会生成或合并薄 `CLAUDE.md`，让 Claude Code 入口指向 `AGENTS.md`，不要复制一套完整规则。
+规则包始终以 `AGENTS.md` 为唯一完整规则源。importer 会生成或合并薄 `CLAUDE.md`、`GEMINI.md` 和 `.github/copilot-instructions.md`；目标项目已有 `CODEBUDDY.md` 时，只向其中合并指向 `AGENTS.md` 的标记段，不复制完整规则。
+
+Kimi Code、Qoder 和未配置 `CODEBUDDY.md` 的 WorkBuddy/CodeBuddy 可直接读取根 `AGENTS.md`，无需额外入口。WorkBuddy/CodeBuddy 已有 `CODEBUDDY.md` 时，importer 只向其中合并指向 `AGENTS.md` 的薄入口；不复制完整规则。
+
+WorkBuddy/CodeBuddy 兼容约定参考官方[规则文档](https://www.workbuddy.ai/docs/zh/ide/User-guide/Rules)与[CLI 记忆文档](https://www.workbuddy.ai/docs/zh/cli/memory)。
 
 ## 手动使用方式
 
@@ -54,16 +66,17 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 5. 对主 app 模块复制并适配 `android-app-AGENTS.template.md` 到 `app/AGENTS.md`。
 6. 对 BLE、ChatKit、skin-support 或其他库模块，按需复制对应模块模板。
 7. 如果目标项目有自己的包名、flavor、构建命令、资源目录、品牌分支，请替换模板里的占位内容。
-8. 插件导入时生成 `CLAUDE.md` 薄入口；手动导入时如需要 Claude Code 支持，也只创建薄入口。
+8. importer 生成 Claude、Gemini、GitHub Copilot 薄入口；已有 `CODEBUDDY.md` 时只合并薄入口。手动适配其他 AI 时也只引用 `AGENTS.md`。
 
-如果需要同步个人全局偏好，可参考 `global-AGENTS.md`，将其中通用协作规则合并到 `C:\Users\<用户名>\.codex\AGENTS.md`。
+如果需要同步个人全局偏好，显式传入 `--global-hosts`。支持的目标为 Codex `%USERPROFILE%\.codex\AGENTS.md`、Claude `%USERPROFILE%\.claude\CLAUDE.md` 和 WorkBuddy `%USERPROFILE%\.codebuddy\CODEBUDDY.md`；三者都从 `global-AGENTS.md` 生成同一标记段并保留已有内容。
 
 ## 文件说明
 
 | 文件 | 用途 |
 | --- | --- |
 | `root-AGENTS.template.md` | 项目根规则模板，负责上下文路由、迁移、工具、测试构建总规则 |
-| `global-AGENTS.md` | 个人全局规则示例，适合放入 `~/.codex/AGENTS.md`，不要直接塞项目业务规则 |
+| `global-AGENTS.md` | 跨工具个人全局规则来源，由 importer 按需合并到 Codex、Claude、WorkBuddy 用户规则 |
+| `reasoning-playbooks.md` | 12 种解释、研究、核查、复杂问题、决策和自我探索方法的按需路由规则 |
 | `android-app-AGENTS.template.md` | Android app 模块规则，适合 XML/ViewBinding/Kotlin/Java 混合项目 |
 | `MEMORY.template.md` | 项目索引模板，用来减少全量扫描和提升业务定位效率 |
 | `IMPORT.md` | 导入流程和适配规则，AI 或插件 skill 必须先读 |
@@ -90,7 +103,8 @@ Codex 应先把仓库 clone/pull 到本地缓存目录，再运行其中的 impo
 - 根目录只保留“路由与硬规则”，不要塞满所有业务细节。
 - 每个重要模块放自己的 `AGENTS.md`，让更近的规则覆盖根规则。
 - `MEMORY.md` 作为业务索引，新增业务目录、入口类、协议类、自定义 View 时同步更新。
-- `AGENTS.md` 是唯一项目规则源，不要并行维护一份内容重复的 `CLAUDE.md`。
+- `AGENTS.md` 是唯一项目规则源，不要在任何厂商入口中并行维护完整规则副本。
+- 根规则只保留高频推理路由；完整方法按任务读取 `AGENTS/reasoning-playbooks.md`，不在简单任务上机械叠加流程。
 - 截图还原、分支迁移、资源导入、自定义 View、录音 SDK/AAR、多语言同步、平台集成、洁癖收尾和 R8 混淆是高风险任务，建议保留对应独立规则文件并在根规则中引用。
 - `neat-freak-rules.md` 只融合知识治理思想，不引入外部脚本、evals 或打开项目时的自动审计；来源项目采用 MIT License。
 - 规则包修改后从技能目录运行 `python scripts/validate_android_easy_rules.py`，健康评分需达到 `A+` 或更高；目标项目导入前可用 importer 的 `--dry-run --strict` 检查缺失规则和未替换占位符。
