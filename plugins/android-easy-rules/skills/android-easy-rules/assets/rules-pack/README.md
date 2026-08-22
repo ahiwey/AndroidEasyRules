@@ -34,6 +34,18 @@ python scripts/import_android_easy_rules.py <目标项目根目录> --global-hos
 
 确认 dry-run 路径和内容后再去掉 `--dry-run`。未提供 `--global-hosts` 时，importer 不修改任何用户级规则。
 
+### 常见 Prompt 统一入口
+
+导入规则或安装插件后，不需要记住 12 个方法。输入 `常见Prompt` 或 `思考菜单` 可显示编号菜单；也可以直接使用：
+
+```text
+常见Prompt：比较方案 A 和方案 B
+常见Prompt 9：比较方案 A 和方案 B
+常见Prompt 推荐：帮我判断这个技术方案
+```
+
+Codex 插件环境还可显式调用 `$reasoning-playbooks`，或输入 `@Android Easy Rules 常见Prompt`。全局规则和项目规则使用相同关键词，Claude、WorkBuddy 等读取对应规则入口后也可使用 `常见Prompt`。
+
 ## 给 AI 的导入协议
 
 当用户要求“导入这个目录的规则”“导入 AGENTS 规则包”“使用这套规则模板”时，必须先读取本目录的 `IMPORT.md`，再执行导入。

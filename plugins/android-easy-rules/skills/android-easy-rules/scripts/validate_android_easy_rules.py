@@ -43,6 +43,9 @@ def snapshot_tree(root: Path) -> dict[str, bytes]:
 def validate_static_pack() -> None:
     skill_text = read(SKILL_DIR / "SKILL.md")
     fast_workflow = read(PLUGIN_SKILLS_DIR / "android-fast-workflow" / "SKILL.md")
+    reasoning_skill_dir = PLUGIN_SKILLS_DIR / "reasoning-playbooks"
+    reasoning_skill = read(reasoning_skill_dir / "SKILL.md")
+    reasoning_openai = read(reasoning_skill_dir / "agents" / "openai.yaml")
     require(skill_text.startswith("---\n"), "SKILL.md is missing YAML frontmatter")
     frontmatter = skill_text.split("---\n", 2)[1]
     keys = [line.split(":", 1)[0].strip() for line in frontmatter.splitlines() if ":" in line]
@@ -54,6 +57,25 @@ def validate_static_pack() -> None:
     require(fast_keys == ["name", "description"], "android-fast-workflow frontmatter must only contain name and description")
     for token in ("screenshot recognition", "compile/build speed", "MEMORY.md name mismatch"):
         require(token in fast_workflow, f"android-fast-workflow trigger is missing: {token}")
+    require(reasoning_skill.startswith("---\n"), "reasoning-playbooks is missing YAML frontmatter")
+    reasoning_frontmatter = reasoning_skill.split("---\n", 2)[1]
+    reasoning_keys = [
+        line.split(":", 1)[0].strip()
+        for line in reasoning_frontmatter.splitlines()
+        if ":" in line
+    ]
+    require(
+        reasoning_keys == ["name", "description"],
+        "reasoning-playbooks frontmatter must only contain name and description",
+    )
+    for token in ("常见Prompt", "思考菜单", "$reasoning-playbooks"):
+        require(token in reasoning_skill, f"reasoning skill trigger is missing: {token}")
+    for key in ("display_name:", "short_description:", "default_prompt:"):
+        require(key in reasoning_openai, f"reasoning-playbooks openai.yaml is missing {key}")
+    require(
+        "$reasoning-playbooks" in reasoning_openai,
+        "reasoning-playbooks default prompt must invoke the skill",
+    )
 
     for name in importer.RULE_FILES:
         path = PACK_DIR / name
@@ -106,6 +128,7 @@ def validate_static_pack() -> None:
     )
     for method in reasoning_methods:
         require(method in reasoning_rules, f"reasoning playbook is missing: {method}")
+        require(method in reasoning_skill, f"reasoning skill menu is missing: {method}")
     require("仅在用户明确要求" in reasoning_rules, "sensitive self-exploration opt-in is missing")
     require("不自动创建子代理" in reasoning_rules, "expert-view delegation boundary is missing")
     require("AGENTS/reasoning-playbooks.md" in root_rules, "root reasoning route is missing")
@@ -114,6 +137,14 @@ def validate_static_pack() -> None:
         "generated reasoning route is missing",
     )
     require("推理与决策方法路由" in global_rules, "global reasoning route is missing")
+    for text, label in (
+        (global_rules, "global-AGENTS.md"),
+        (root_rules, "root-AGENTS.template.md"),
+        (reasoning_rules, "reasoning-playbooks.md"),
+        (importer.generated_agents_section(), "generated_agents_section"),
+    ):
+        for token in ("常见Prompt", "思考菜单"):
+            require(token in text, f"unified reasoning entry is missing from {label}: {token}")
 
     require("Quick 默认预算" in root_rules, "Quick execution budget is missing")
     require("用户称呼与索引对齐" in root_rules, "index naming alignment rule is missing")
@@ -160,8 +191,10 @@ def validate_static_pack() -> None:
 
     plugin = json.loads(read(SKILL_DIR.parent.parent / ".codex-plugin" / "plugin.json"))
     require(plugin["name"] == "android-easy-rules", "plugin name is inconsistent")
+    require(plugin["version"].startswith("0.4."), "plugin version was not bumped for reasoning skill")
     require("./skills/" in plugin["skills"], "plugin skills path is missing")
     require(plugin["interface"]["defaultPrompt"], "plugin default prompt is empty")
+    require("常见Prompt" in plugin["interface"]["defaultPrompt"], "plugin menu entry is missing")
 
     openai = read(SKILL_DIR / "agents" / "openai.yaml")
     for key in ("display_name:", "short_description:", "default_prompt:"):

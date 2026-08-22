@@ -15,6 +15,7 @@
 - “从 `https://github.com/ahiwey/AndroidEasyRules.git` 导入最新版规则”
 - “生成 Codex 的 AGENTS.md 和 Claude、Gemini、GitHub Copilot 的薄入口”
 - “同步 Codex、Claude、WorkBuddy 的个人全局规则”
+- “显示常见Prompt”“思考菜单”或“帮我选择合适的 Prompt 方法”
 
 ## 总原则
 
@@ -86,7 +87,7 @@
 根 `AGENTS.md` 应包含：
 
 - 沟通语言和协作偏好。
-- 高频推理与决策方法路由，以及 `AGENTS/reasoning-playbooks.md` 完整方法入口。
+- 高频推理与决策方法路由、`常见Prompt` 统一菜单，以及 `AGENTS/reasoning-playbooks.md` 完整方法入口。
 - `MEMORY.md` 先行检索规则。
 - 模块级 `AGENTS.md` 优先规则。
 - CodeGraph 与 `rg` 的使用边界。

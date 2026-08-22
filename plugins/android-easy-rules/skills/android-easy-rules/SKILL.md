@@ -59,6 +59,7 @@ Remove `--dry-run` only after the paths and merged scope are confirmed. Without 
    - `AGENTS/reasoning-playbooks.md` contains 12 opt-in or task-routed methods for explanation, research, verification, complex problem-solving, decisions, experiments, and explicitly requested self-exploration.
    - `AGENTS/` also contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, commit migration, recording SDK/AAR flows, multilang strings, Android platform integration, neat-freak knowledge closeout, and R8/ProGuard.
    - The plugin also provides `android-fast-workflow` for fast Android task routing, screenshot recognition, compile-speed decisions, and MEMORY.md alias alignment.
+   - The plugin provides `reasoning-playbooks` as the user-facing “常见 Prompt” menu. It handles `常见Prompt`, numbered selection, automatic recommendation, and explicit `$reasoning-playbooks` invocation.
 
 6. If the importer cannot infer a detail, replace placeholders conservatively:
    - module list
