@@ -51,6 +51,7 @@ def validate_static_pack() -> None:
     keys = [line.split(":", 1)[0].strip() for line in frontmatter.splitlines() if ":" in line]
     require(keys == ["name", "description"], "SKILL.md frontmatter must only contain name and description")
     require("AndroidEasyRules" in skill_text and "AGENTS" in skill_text, "SKILL.md trigger description is incomplete")
+    require("Export Rule Improvements" in skill_text, "rule improvement export workflow is missing")
     require(fast_workflow.startswith("---\n"), "android-fast-workflow is missing YAML frontmatter")
     fast_frontmatter = fast_workflow.split("---\n", 2)[1]
     fast_keys = [line.split(":", 1)[0].strip() for line in fast_frontmatter.splitlines() if ":" in line]
@@ -98,6 +99,7 @@ def validate_static_pack() -> None:
         "默认写入 AI 缓存",
         "实质交付",
         "沉淀为 Skill",
+        "AndroidSampleSkill",
     )
     for text, label in (
         (global_rules, "global-AGENTS.md"),
@@ -150,9 +152,12 @@ def validate_static_pack() -> None:
     require("用户称呼与索引对齐" in root_rules, "index naming alignment rule is missing")
     require("android-fast-workflow" in root_rules, "fast workflow skill routing is missing")
     require("状态 × 事件 × 期望输出" in root_rules, "state transition matrix rule is missing")
+    require("返工信号" in global_rules and "返工信号" in root_rules, "rework evidence loop is missing")
+    require("Rework:" in fast_workflow, "fast workflow rework route is missing")
     require("别名与索引命名" in memory_template, "MEMORY alias table is missing")
     require("热点页面索引模板" in memory_template, "hot page index template is missing")
     require("截图识别提效" in screenshot_rules, "screenshot recognition efficiency rules are missing")
+    require("同场景截图" in screenshot_rules, "same-scene visual regression rule is missing")
     require("process<Flavor>DebugResources" in testing_rules, "focused resource task is missing")
     require("编译速度优化" in testing_rules, "compile speed optimization rules are missing")
     require("Android Studio 构建优先" in testing_rules, "Android Studio build priority rules are missing")
@@ -162,6 +167,8 @@ def validate_static_pack() -> None:
     require("不重跑同一命令" in testing_rules, "Gradle timeout retry guard is missing")
     require("不默认运行 Gradle" in screenshot_rules, "screenshot Quick validation rule is missing")
     require("不加载通用 UI/UX 流程" in custom_view_rules, "custom View Quick routing is missing")
+    require("绘制契约" in custom_view_rules, "custom View drawing contract is missing")
+    require("上一轮视觉修改已失败" in testing_rules, "visual rework build exception is missing")
     for text, label in ((import_rules, "IMPORT.md"), (readme, "README.md")):
         require("A+" in text and "health" in text.lower() or "健康评分" in text, f"A+ health scoring guidance is missing in {label}")
         require("WorkBuddy" in text and "AGENTS.md" in text, f"WorkBuddy import guidance is missing in {label}")

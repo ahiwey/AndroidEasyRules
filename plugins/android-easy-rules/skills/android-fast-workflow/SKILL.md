@@ -18,6 +18,7 @@ Use this skill to keep Android work fast, visual, and verifiable without loading
    - Quick: specific file, function, layout, resource key, screenshot delta, log line, or known fix.
    - Strict: BLE/protocol, SDK/AAR, commit migration, R8/minify, permissions/release, cross-module device flows, or async state bugs.
    - Analysis-only: user asks to inspect, compare, explain, or plan without asking for edits.
+   - Rework: user says “还是不对”, “没画好”, “继续微调”, or “仍会复现”. Reopen the latest evidence and current diff before editing; do not treat this as another parameter-only Quick pass.
 
 3. Pick focused rules only.
    - Screenshot/UI: `AGENTS/screenshot-ui-rules.md`.
@@ -33,10 +34,12 @@ Use this skill to keep Android work fast, visual, and verifiable without loading
 - Convert the visual target into 3–5 anchor facts: title/header, main container, primary control, list/card state, bottom/top safe area.
 - Locate source by verifiable clues: text keys, layout ids, drawable/mipmap names, Activity/Fragment names, and adapter item layouts.
 - For small visual deltas, edit only the target XML/drawable/resource; avoid broad UI/UX processes unless the page is new, cross-screen, or being redesigned.
+- On a rework pass, preserve previously accepted anchors and add the new complaint to one 3–6 item regression checklist. Check the actual runtime resource variant and parent constraint/measurement chain before changing another offset.
+- If a device or emulator is available after a failed visual attempt, reproduce and verify with the same screen, state, unit, locale, and data before and after the patch. Static diff alone is not visual completion.
 
 ## Compile Speed
 
-- Existing values, layout attributes, colors, copy, and numeric parameters: static diff plus necessary visual check.
+- Existing values, layout attributes, colors, copy, and numeric parameters: static diff plus necessary visual check. When a previous visual attempt failed and only runtime rendering can decide the result, one narrow install/launch for the same-scene screenshot is necessary verification, not an optional full build.
 - New or renamed resources/XML ids: one focused `process<Flavor>DebugResources` task when available.
 - Kotlin/Java signature or type boundary changes: one focused compile task or directly relevant unit test.
 - APK/AAR, manifest, signing, Gradle, dependency, or release behavior: affected assemble only when the smaller task cannot cover the integration boundary.
@@ -50,3 +53,9 @@ Use this skill to keep Android work fast, visual, and verifiable without loading
 - If a task reveals a recurring page, user alias, renamed entry, moved business directory, or wrong index, update `MEMORY.md` in the same turn.
 - Hot pages should be indexed as: user aliases, standard entry, UI/layout files, data/adapter files, resources, and key risks.
 - Do not copy another project's business names into a generic rules pack; keep templates generic and let the importer fill project facts.
+
+## Stateful Bug Intake
+
+- For first-entry, cache, bind/unbind, foreground/background, reconnect, or duplicate-request bugs, write the smallest `state × event × expected output` matrix before editing.
+- Distinguish request-level success, attempt-level callbacks, and ownership/identity of the active object or GATT. Do not repair callback appearance until the event source and owner are proven.
+- If the user already approved a concrete plan, perform one current-diff feasibility check and implement it. Reopen diagnosis only when the code changed, verification fails, or new evidence invalidates the plan.

@@ -77,6 +77,18 @@ Remove `--dry-run` only after the paths and merged scope are confirmed. Without 
 - Keep every vendor entrypoint thin so `AGENTS.md` remains the single complete rules source.
 - Keep global sync opt-in. Merge only the AndroidEasyRules marked section into `%USERPROFILE%/.codex/AGENTS.md`, `%USERPROFILE%/.claude/CLAUDE.md`, or `%USERPROFILE%/.codebuddy/CODEBUDDY.md`, preserving existing content.
 
+## Export Rule Improvements
+
+When a workflow audit or completed task improves agent root rules or project rules:
+
+- Separate reusable collaboration or Android behavior from project paths, brands, flavors, business facts, and one-off commands.
+- Keep project-specific facts only in that project's `AGENTS.md` or `MEMORY.md`.
+- Write generalized behavior into `global-AGENTS.md`, `root-AGENTS.template.md`, and the narrowest relevant focused rule or Skill.
+- Update the active current-computer rule as well; exporting to the source pack alone does not apply the change locally.
+- Run the validator and a representative importer `--dry-run --strict` before publishing.
+- Commit and push the AndroidEasyRules source only when publishing is authorized. An installed plugin cache is not a durable source because upgrades may overwrite it.
+- If AndroidEasyRules is unavailable, keep the improvement local and do not install or create it implicitly.
+
 ## Bundled Resources
 
 - `assets/rules-pack/`: Android rules templates and focused rule files, including 12 adapted reasoning playbooks, Chinese Karpathy behavior guidelines, Android platform integration rules, and neat-freak knowledge closeout rules adapted from `KKKKhazix/khazix-skills/neat-freak` under MIT License.
