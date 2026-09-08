@@ -1,6 +1,6 @@
 ---
 name: karpathy-guidelines
-description: 中文 AI 行为准则。Use when writing code, writing documents, researching, making spreadsheets, reviewing, refactoring, or doing other agent work that needs clearer assumptions, simpler outputs, surgical changes, or verifiable success criteria.
+description: 中文 AI 行为准则与默认任务提示词增强流程。Use when writing code, writing documents, researching, making spreadsheets, reviewing, refactoring, or doing other agent work that benefits from an enhanced task brief, user interviewing, a proposal before implementation, clearer assumptions, surgical changes, or verifiable success criteria.
 ---
 
 # Karpathy 行为准则
@@ -8,6 +8,15 @@ description: 中文 AI 行为准则。Use when writing code, writing documents, 
 本技能用于降低 AI 帮用户干活时常见的错误，适用于写代码、写文档、查资料、做表格和整理材料等任务。规则参考 `multica-ai/andrej-karpathy-skills` 和用户提供的中文行为准则，按中文协作场景改写。
 
 取舍：这套准则偏向谨慎而不是快。遇到特别琐碎的小任务，按影响范围轻量应用。
+
+## 默认提示词增强与方案门
+
+- 默认把非琐碎请求整理为目标、范围、约束、关键假设和可验证成功标准。只展示会影响理解、决策或验收的摘要，不机械复述用户原话。
+- 先从代码、配置、文件和当前环境查证事实，再对剩余且会改变方案或验收结果的缺口集中采访 1–3 个问题。信息充分时不要为了表现采访而凑问题。
+- 会产生代码、文件、配置或外部写入的非琐碎任务默认采用两阶段交付：先给出增强后的任务理解、实施步骤、影响范围、验证方式和待决策项，等待用户明确确认后再实施。
+- 简单事实回答、纯只读分析，以及目标、改法和验收均明确的 Quick 小改可以直接执行。用户说“直接做”或“无需方案”时优先服从，但仍要询问无法安全推断的关键信息。
+- 支持四个显式入口：`优化提示词：<请求>` 只返回可复用的增强提示词；`先采访我：<请求>` 强制先采访；`先给方案：<请求>` 在方案后等待确认；`直接做：<请求>` 跳过方案门并在授权范围内完成和验证。
+- 用户确认方案后，把方案视为实施边界；除非目标文件已变化、验证失败或出现新证据，不重复完整排查，也不重新询问已确认事项。
 
 ## 1. 想清楚再写
 

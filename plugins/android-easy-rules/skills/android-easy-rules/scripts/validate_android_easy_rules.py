@@ -45,6 +45,9 @@ def snapshot_tree(root: Path) -> dict[str, bytes]:
 def validate_static_pack() -> None:
     skill_text = read(SKILL_DIR / "SKILL.md")
     fast_workflow = read(PLUGIN_SKILLS_DIR / "android-fast-workflow" / "SKILL.md")
+    karpathy_skill_dir = PLUGIN_SKILLS_DIR / "karpathy-guidelines"
+    karpathy_skill = read(karpathy_skill_dir / "SKILL.md")
+    karpathy_openai = read(karpathy_skill_dir / "agents" / "openai.yaml")
     reasoning_skill_dir = PLUGIN_SKILLS_DIR / "reasoning-playbooks"
     reasoning_skill = read(reasoning_skill_dir / "SKILL.md")
     reasoning_openai = read(reasoning_skill_dir / "agents" / "openai.yaml")
@@ -60,6 +63,24 @@ def validate_static_pack() -> None:
     require(fast_keys == ["name", "description"], "android-fast-workflow frontmatter must only contain name and description")
     for token in ("screenshot recognition", "compile/build speed", "MEMORY.md name mismatch"):
         require(token in fast_workflow, f"android-fast-workflow trigger is missing: {token}")
+    require(karpathy_skill.startswith("---\n"), "karpathy-guidelines is missing YAML frontmatter")
+    karpathy_frontmatter = karpathy_skill.split("---\n", 2)[1]
+    karpathy_keys = [
+        line.split(":", 1)[0].strip()
+        for line in karpathy_frontmatter.splitlines()
+        if ":" in line
+    ]
+    require(
+        karpathy_keys == ["name", "description"],
+        "karpathy-guidelines frontmatter must only contain name and description",
+    )
+    for token in ("enhanced task brief", "user interviewing", "proposal before implementation"):
+        require(token in karpathy_skill, f"karpathy-guidelines trigger is missing: {token}")
+    for token in ("默认提示词增强", "优化提示词", "两阶段交付", "直接做"):
+        require(token in karpathy_skill, f"karpathy-guidelines workflow is missing: {token}")
+    for key in ("display_name:", "short_description:", "default_prompt:"):
+        require(key in karpathy_openai, f"karpathy-guidelines openai.yaml is missing {key}")
+    require("先方案后实施" in karpathy_openai, "karpathy-guidelines prompt gate is missing")
     require(reasoning_skill.startswith("---\n"), "reasoning-playbooks is missing YAML frontmatter")
     reasoning_frontmatter = reasoning_skill.split("---\n", 2)[1]
     reasoning_keys = [
@@ -100,7 +121,7 @@ def validate_static_pack() -> None:
     import_rules = read(PACK_DIR / "IMPORT.md")
     readme = read(PACK_DIR / "README.md")
     rules_version = read(PACK_DIR / "VERSION").strip()
-    require(rules_version == "0.5.0", "rules-pack VERSION is not 0.5.0")
+    require(rules_version == "0.6.0", "rules-pack VERSION is not 0.6.0")
     require(importer.read_rules_version(PACK_DIR) == rules_version, "importer VERSION parsing failed")
     require(
         (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
@@ -109,6 +130,10 @@ def validate_static_pack() -> None:
 
     collaboration_tokens = (
         "苏格拉底式提问",
+        "轻量提示词增强",
+        "两阶段交付",
+        "优化提示词",
+        "直接做",
         "默认写入 AI 缓存",
         "实质交付",
         "沉淀为 Skill",
@@ -223,10 +248,11 @@ def validate_static_pack() -> None:
 
     plugin = json.loads(read(SKILL_DIR.parent.parent / ".codex-plugin" / "plugin.json"))
     require(plugin["name"] == "android-easy-rules", "plugin name is inconsistent")
-    require(plugin["version"].startswith("0.5."), "plugin version was not bumped for version reminders")
+    require(plugin["version"].startswith("0.6."), "plugin version was not bumped for prompt enhancement")
     require("./skills/" in plugin["skills"], "plugin skills path is missing")
     require(plugin["interface"]["defaultPrompt"], "plugin default prompt is empty")
     require("常见Prompt" in plugin["interface"]["defaultPrompt"], "plugin menu entry is missing")
+    require("增强提示词" in plugin["interface"]["defaultPrompt"], "plugin prompt-enhancement entry is missing")
 
     openai = read(SKILL_DIR / "agents" / "openai.yaml")
     for key in ("display_name:", "short_description:", "default_prompt:"):
@@ -351,7 +377,7 @@ def validate_fixture_import() -> None:
             require(topic in root_agents, f"capability route missing: {topic}")
         require("ble-core/AGENTS.md" in memory, "BLE module route missing")
         require("reasoning-playbooks.md" not in root_agents, "reasoning route was imported into root rules")
-        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.5.0 -->"
+        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.6.0 -->"
         require(root_agents.count(version_marker) == 1, "root rules version marker is invalid")
         require(app_agents.count(version_marker) == 1, "app rules version marker is invalid")
         require(
@@ -412,7 +438,7 @@ def validate_legacy_marker_upgrade() -> None:
         require("Keep this project-specific rule." in merged, "legacy user rules were lost")
         require("Old imported rules" not in merged, "legacy marked rules were not replaced")
         require(
-            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.5.0 -->") == 1,
+            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.0 -->") == 1,
             "legacy project did not receive one current version marker",
         )
 
@@ -479,14 +505,14 @@ def validate_global_rule_sync() -> None:
                 require(merged.startswith(heading), f"new global rule heading is invalid: {host}")
             require(merged.count(importer.MARKER_START) == 1, f"global marker count is invalid: {path}")
             require(
-                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.5.0 -->") == 1,
+                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.0 -->") == 1,
                 f"global version marker is invalid: {path}",
             )
             require("推理与决策方法路由" not in merged, f"reasoning route leaked into: {path}")
 
         checker_home = user_home / ".android-easy-rules"
         require((checker_home / "check_version.py").is_file(), "global sync did not install checker")
-        require(read(checker_home / "VERSION").strip() == "0.5.0", "global VERSION is invalid")
+        require(read(checker_home / "VERSION").strip() == "0.6.0", "global VERSION is invalid")
 
         before = snapshot_tree(user_home)
         importer.sync_global_rules(
@@ -685,7 +711,7 @@ def health_report() -> tuple[int, str]:
             "reasoning-playbooks.md" not in importer.generated_agents_section(),
             "隐藏天赋探索" in read(PACK_DIR / "reasoning-playbooks.md"),
             set(importer.GLOBAL_HOSTS) == {"codex", "claude", "workbuddy"},
-            read(PACK_DIR / "VERSION").strip() == "0.5.0",
+            read(PACK_DIR / "VERSION").strip() == "0.6.0",
             (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
             "AndroidEasyRules 版本提醒" in read(PACK_DIR / "global-AGENTS.md"),
             "@./AGENTS.md" in importer.gemini_entry(),
