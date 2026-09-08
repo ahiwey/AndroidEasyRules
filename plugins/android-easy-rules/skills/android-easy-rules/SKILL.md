@@ -1,6 +1,6 @@
 ---
 name: android-easy-rules
-description: Import adaptive Chinese Android AI-agent rules, 12 reasoning and decision playbooks, task-clarification behavior, and Karpathy guidelines into a project, with optional explicit user-level sync for Codex, Claude, and WorkBuddy. Use when the user asks to import AndroidEasyRules, apply Android AGENTS rules, add reusable Prompt methods, generate canonical AGENTS.md plus thin vendor entrypoints, or sync global AI rules.
+description: Import adaptive Chinese Android AI-agent rules, task-clarification behavior, and Karpathy guidelines into a project, with optional explicit user-level sync for Codex, Claude, and WorkBuddy. Use when the user asks to import AndroidEasyRules, apply Android AGENTS rules, generate canonical AGENTS.md plus thin vendor entrypoints, or sync global AI rules.
 ---
 
 # Android Easy Rules
@@ -51,15 +51,16 @@ python scripts/import_android_easy_rules.py <target-project-root> --global-hosts
 
 Remove `--dry-run` only after the paths and merged scope are confirmed. Without `--global-hosts`, do not modify user-level rule files.
 
+When global hosts are explicitly requested, the importer also installs the low-frequency version checker under `~/.android-easy-rules/`. It checks locally on the first turn of a new task, refreshes the GitHub `VERSION` cache at most every seven days, and never updates project rules without a separate explicit request.
+
 5. Review the generated or merged files:
    - `AGENTS.md` is the canonical full AI-agent rule source for Codex and compatible tools such as Kimi Code, Qoder, and CodeBuddy.
    - `CLAUDE.md`, `GEMINI.md`, and `.github/copilot-instructions.md` are thin entrypoints pointing to `AGENTS.md`.
    - Do not create `CODEBUDDY.md` when it is absent because CodeBuddy falls back to `AGENTS.md`; when it already exists, merge only a marked thin entrypoint.
    - `MEMORY.md` is a project index and must not contain source-project business details.
-   - `AGENTS/reasoning-playbooks.md` contains 12 opt-in or task-routed methods for explanation, research, verification, complex problem-solving, decisions, experiments, and explicitly requested self-exploration.
    - `AGENTS/` also contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, commit migration, recording SDK/AAR flows, multilang strings, Android platform integration, neat-freak knowledge closeout, and R8/ProGuard.
    - The plugin also provides `android-fast-workflow` for fast Android task routing, screenshot recognition, compile-speed decisions, and MEMORY.md alias alignment.
-   - The plugin provides `reasoning-playbooks` as the user-facing “常见 Prompt” menu. It handles `常见Prompt`, numbered selection, automatic recommendation, and explicit `$reasoning-playbooks` invocation.
+   - The plugin separately provides `reasoning-playbooks` as an opt-in “常见 Prompt” skill. It is not copied into project or user-level rules by this importer.
 
 6. If the importer cannot infer a detail, replace placeholders conservatively:
    - module list
@@ -91,7 +92,7 @@ When a workflow audit or completed task improves agent root rules or project rul
 
 ## Bundled Resources
 
-- `assets/rules-pack/`: Android rules templates and focused rule files, including 12 adapted reasoning playbooks, Chinese Karpathy behavior guidelines, Android platform integration rules, and neat-freak knowledge closeout rules adapted from `KKKKhazix/khazix-skills/neat-freak` under MIT License.
+- `assets/rules-pack/`: Android rules templates and focused rule files, including Chinese Karpathy behavior guidelines, Android platform integration rules, and neat-freak knowledge closeout rules adapted from `KKKKhazix/khazix-skills/neat-freak` under MIT License. Its `reasoning-playbooks.md` supports the standalone plugin skill and is intentionally excluded from imports.
 - `scripts/import_android_easy_rules.py`: conservative importer for AGENTS, CLAUDE, MEMORY, and `AGENTS/` rule files.
 - `scripts/validate_android_easy_rules.py`: standard-library self-check for pack completeness, UTF-8, source leakage, detection routes, idempotent fixture import, and A+ health score output.
 
@@ -101,6 +102,7 @@ After importing into a target project:
 
 - Read `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, and `MEMORY.md` as UTF-8.
 - Confirm every generated or merged vendor entrypoint points to `AGENTS.md` and does not duplicate the full rules.
+- Confirm imported project and user-level rules do not contain `AGENTS/reasoning-playbooks.md` or the “常见 Prompt” routing section.
 - When global hosts were requested, confirm existing user rules were preserved, each target has one AndroidEasyRules marker, and a second sync is idempotent.
 - Confirm generated rules do not mention source-project-specific package names, flavors, branches, concrete local cache paths, or business names; generic variables such as `%USERPROFILE%` are allowed for the GitHub update flow.
 - Do not run Android Gradle for rules-only imports unless the user asks or the import also changes Android code/resources.

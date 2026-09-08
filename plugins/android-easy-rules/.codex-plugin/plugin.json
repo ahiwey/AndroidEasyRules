@@ -1,6 +1,6 @@
 {
   "name": "android-easy-rules",
-  "version": "0.4.0+codex.20260822153906",
+  "version": "0.5.0+codex.20260831173018",
   "description": "\u5c06\u4e2d\u6587 Android AGENTS.md\u3001AI \u534f\u4f5c\u95ed\u73af\u548c\u591a AI \u8584\u5165\u53e3\u5bfc\u5165\u76ee\u6807\u9879\u76ee\uff0c\u5e76\u63d0\u4f9b\u5feb\u901f\u4efb\u52a1\u8def\u7531\u3001\u622a\u56fe\u8bc6\u522b\u548c\u7f16\u8bd1\u901f\u5ea6\u4f18\u5316\u6280\u80fd\u3002",
   "author": {
     "name": "Local developer"

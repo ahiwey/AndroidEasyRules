@@ -15,7 +15,6 @@
 - “从 `https://github.com/ahiwey/AndroidEasyRules.git` 导入最新版规则”
 - “生成 Codex 的 AGENTS.md 和 Claude、Gemini、GitHub Copilot 的薄入口”
 - “同步 Codex、Claude、WorkBuddy 的个人全局规则”
-- “显示常见Prompt”“思考菜单”或“帮我选择合适的 Prompt 方法”
 
 ## 总原则
 
@@ -26,6 +25,10 @@
 - 保留目标项目自己的协作偏好、语言要求、测试偏好、构建命令、模块职责和安全约束。
 - 模板中的占位符必须替换为目标项目实际信息。
 - 不要把源项目名称、源分支名、源包名、源 flavor、具体业务索引或品牌资源写入其他项目，除非目标项目确实使用它们。
+- `reasoning-playbooks.md` 仅供插件内独立 Skill 使用，不随项目规则包导入，也不进入个人全局规则。
+- 规则包版本以 `VERSION` 中的严格 SemVer 为准；项目和个人全局规则的 AndroidEasyRules 标记段必须写入同一版本注释。
+- 普通项目导入不得写入用户级版本检查器；只有用户显式传入 `--global-hosts` 时，才同步 `~/.android-easy-rules/check_version.py` 和本机 `VERSION`。
+- 版本检查只提醒、不自动更新；远端检查失败时继续使用本机或历史缓存，不阻断当前任务。
 
 ## 导入前必须收集的信息
 
@@ -59,7 +62,6 @@
 7. 生成或合并 `MEMORY.md`。
 8. 给重要模块生成或合并模块级 `AGENTS.md`。
 9. 保留独立规则文件到目标项目的 `AGENTS/` 目录：
-   - `reasoning-playbooks.md`
    - `commit-migration-rules.md`
    - `screenshot-ui-rules.md`
    - `image-resource-rules.md`
@@ -87,7 +89,6 @@
 根 `AGENTS.md` 应包含：
 
 - 沟通语言和协作偏好。
-- 高频推理与决策方法路由、`常见Prompt` 统一菜单，以及 `AGENTS/reasoning-playbooks.md` 完整方法入口。
 - `MEMORY.md` 先行检索规则。
 - 模块级 `AGENTS.md` 优先规则。
 - CodeGraph 与 `rg` 的使用边界。

@@ -34,9 +34,17 @@ python scripts/import_android_easy_rules.py <目标项目根目录> --global-hos
 
 确认 dry-run 路径和内容后再去掉 `--dry-run`。未提供 `--global-hosts` 时，importer 不修改任何用户级规则。
 
+### 规则版本与低频提醒
+
+规则包使用独立的 `VERSION` SemVer，导入后的根 `AGENTS.md` 会包含 `ANDROID_EASY_RULES_VERSION` 注释。插件版本和规则版本分别维护；只有导入规则的实际行为或内容变化时才提升规则版本。
+
+显式使用 `--global-hosts` 时，importer 还会把版本检查器和本机 `VERSION` 安装到 `~/.android-easy-rules/`。全局根规则只在每个新任务首轮执行一次本地检查；GitHub `main` 中的 `VERSION` 最多每 7 天读取一次。同一项目对同一新版默认只提醒一次，提醒不阻断任务，也不会自动更新规则。普通项目导入和 `--dry-run` 都不会安装用户级检查器。
+
+没有版本注释的旧项目按 `legacy` 处理。用户可要求“7 天后提醒”或“忽略此版本”；检查器只保存项目路径哈希和版本状态，不修改目标项目。
+
 ### 常见 Prompt 统一入口
 
-导入规则或安装插件后，不需要记住 12 个方法。输入 `常见Prompt` 或 `思考菜单` 可显示编号菜单；也可以直接使用：
+安装插件后，不需要记住 12 个方法。输入 `常见Prompt` 或 `思考菜单` 可显示编号菜单；也可以直接使用：
 
 ```text
 常见Prompt：比较方案 A 和方案 B
@@ -44,7 +52,7 @@ python scripts/import_android_easy_rules.py <目标项目根目录> --global-hos
 常见Prompt 推荐：帮我判断这个技术方案
 ```
 
-Codex 插件环境还可显式调用 `$reasoning-playbooks`，或输入 `@Android Easy Rules 常见Prompt`。全局规则和项目规则使用相同关键词，Claude、WorkBuddy 等读取对应规则入口后也可使用 `常见Prompt`。
+Codex 插件环境还可显式调用 `$reasoning-playbooks`，或输入 `@Android Easy Rules 常见Prompt`。该能力仅由独立插件 Skill 提供，不随项目规则包导入，也不进入个人全局规则。
 
 ## 给 AI 的导入协议
 
@@ -88,7 +96,7 @@ WorkBuddy/CodeBuddy 兼容约定参考官方[规则文档](https://www.workbuddy
 | --- | --- |
 | `root-AGENTS.template.md` | 项目根规则模板，负责上下文路由、迁移、工具、测试构建总规则 |
 | `global-AGENTS.md` | 跨工具个人全局规则来源，由 importer 按需合并到 Codex、Claude、WorkBuddy 用户规则 |
-| `reasoning-playbooks.md` | 12 种解释、研究、核查、复杂问题、决策和自我探索方法的按需路由规则 |
+| `reasoning-playbooks.md` | 独立 `reasoning-playbooks` 插件 Skill 的支持资产，不由 importer 复制 |
 | `android-app-AGENTS.template.md` | Android app 模块规则，适合 XML/ViewBinding/Kotlin/Java 混合项目 |
 | `MEMORY.template.md` | 项目索引模板，用来减少全量扫描和提升业务定位效率 |
 | `IMPORT.md` | 导入流程和适配规则，AI 或插件 skill 必须先读 |
@@ -116,7 +124,7 @@ WorkBuddy/CodeBuddy 兼容约定参考官方[规则文档](https://www.workbuddy
 - 每个重要模块放自己的 `AGENTS.md`，让更近的规则覆盖根规则。
 - `MEMORY.md` 作为业务索引，新增业务目录、入口类、协议类、自定义 View 时同步更新。
 - `AGENTS.md` 是唯一项目规则源，不要在任何厂商入口中并行维护完整规则副本。
-- 根规则只保留高频推理路由；完整方法按任务读取 `AGENTS/reasoning-playbooks.md`，不在简单任务上机械叠加流程。
+- 推理与决策方法只通过独立插件 Skill 提供，不写入项目或个人全局规则。
 - 截图还原、分支迁移、资源导入、自定义 View、录音 SDK/AAR、多语言同步、平台集成、洁癖收尾和 R8 混淆是高风险任务，建议保留对应独立规则文件并在根规则中引用。
 - `neat-freak-rules.md` 只融合知识治理思想，不引入外部脚本、evals 或打开项目时的自动审计；来源项目采用 MIT License。
 - 规则包修改后从技能目录运行 `python scripts/validate_android_easy_rules.py`，健康评分需达到 `A+` 或更高；目标项目导入前可用 importer 的 `--dry-run --strict` 检查缺失规则和未替换占位符。

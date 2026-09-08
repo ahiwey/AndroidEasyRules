@@ -11,10 +11,10 @@ from pathlib import Path
 
 MARKER_START = "<!-- ANDROID_EASY_RULES_START -->"
 MARKER_END = "<!-- ANDROID_EASY_RULES_END -->"
+VERSION_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 RULE_FILES = [
     "karpathy-guidelines.md",
-    "reasoning-playbooks.md",
     "commit-migration-rules.md",
     "screenshot-ui-rules.md",
     "image-resource-rules.md",
@@ -45,6 +45,17 @@ UNFILLED_PLACEHOLDER_RE = re.compile(r"<填写(?!\.\.\.)[^>\r\n]*>")
 
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def read_rules_version(rules_pack: Path) -> str:
+    version = read_text(rules_pack / "VERSION").strip()
+    if not VERSION_RE.fullmatch(version):
+        raise ValueError(f"Invalid AndroidEasyRules VERSION: {version!r}")
+    return version
+
+
+def versioned_section(section: str, version: str) -> str:
+    return f"<!-- ANDROID_EASY_RULES_VERSION: {version} -->\n{section.rstrip()}"
 
 
 def write_text(path: Path, text: str, dry_run: bool) -> None:
@@ -539,9 +550,6 @@ def generated_agents_section() -> str:
 - Claude Code、Gemini CLI 和 GitHub Copilot 使用薄入口读取 `AGENTS.md`，不得复制完整规则；目标项目已有 `CODEBUDDY.md` 时，只在其中合并指向 `AGENTS.md` 的标记段。
 - 开始任务前先判断背景、痛点、需求和成功标准是否清楚；缺少关键信息时，使用苏格拉底式提问，优先一次集中询问 1–3 个互相独立、会改变实现或验收结果的问题。只有前一问的答案决定后一问时才逐问；能自行查明的事实先查证。
 - 用户先要求方案、确认后再实施时，把已确认方案视为实施边界；除非代码已变化、验证失败或出现新证据，不重复完整排查或询问已确认事项。
-- 用户只输入 `常见Prompt`、`常见 Prompt` 或 `思考菜单` 时，列出 12 种方法的编号菜单和最短用法；输入 `常见Prompt <编号>：<问题>` 时使用指定方法；输入 `常见Prompt：<问题>` 或 `常见Prompt 推荐：<问题>` 时选择最合适的最少方法，简短说明后直接执行。
-- 解释陌生概念使用双层解释；学习范例使用反向拆解；系统调研使用横纵分析；核验说法时执行事实核查；复杂方案按需使用互补专家视角、第一性原理或跨领域借解；二选一决策使用双向钢人；不确定性无法继续靠讨论降低时设计最小可逆实验。完整步骤见 `AGENTS/reasoning-playbooks.md`。
-- 专家视角默认在当前回答内完成，不自动创建子代理；只有用户明确要求子代理、委派或并行 Agent 工作时才使用。隐藏天赋和人生设计仅在用户明确要求时启用，不作为心理诊断。
 - 新建文件或产物时，如果用户未指定目录且当前上下文没有明确的既存目标目录，写入前先询问保存位置；不得默认写入 AI 缓存、临时目录或默认输出目录。已指定目录或修改现有目录时不重复询问。
 - 每次实质交付后，在最终回复正文询问结果是否满足需求，并说明可以继续迭代；纯闲聊和简短事实回答除外。不得为此使用终端弹框或选项工具。
 - 多文件修改、外部调研、构建测试、长文档或多轮工具操作等明显耗时或耗 Token 的任务完成后，在最终回复正文提示可以继续优化或沉淀为 Skill；只提示，不自动创建 Skill，也不得为此使用终端弹框或选项工具。
@@ -703,13 +711,19 @@ def copy_module_rules(
     target: Path,
     app_module: str | None,
     values: dict[str, str],
+    rules_version: str,
     dry_run: bool,
 ) -> None:
     if app_module and module_dir(target, app_module).exists():
         src = rules_pack / "android-app-AGENTS.template.md"
         dst = module_dir(target, app_module) / "AGENTS.md"
         if src.exists():
-            merge_marked_file(dst, fill_template(read_text(src), values), generated_app_section(values), dry_run)
+            merge_marked_file(
+                dst,
+                fill_template(read_text(src), values),
+                versioned_section(generated_app_section(values), rules_version),
+                dry_run,
+            )
 
     modules = detect_modules(target)
     for module in modules:
@@ -724,7 +738,12 @@ def copy_module_rules(
             module_values = dict(values)
             module_values["module"] = module
             generated = fill_template(read_text(src).replace("<module>", module), module_values)
-            merge_marked_file(dst, generated, generated_agents_section(), dry_run)
+            merge_marked_file(
+                dst,
+                generated,
+                versioned_section(generated_agents_section(), rules_version),
+                dry_run,
+            )
 
 
 def warn_if_generated_text_has_issues(label: str, text: str, rules_pack: Path) -> list[str]:
@@ -795,7 +814,8 @@ def sync_global_rules(
     if unknown:
         raise ValueError("Unsupported global host: " + ", ".join(unknown))
 
-    section = global_rules_section(rules_pack)
+    rules_version = read_rules_version(rules_pack)
+    section = versioned_section(global_rules_section(rules_pack), rules_version)
     issues = warn_if_generated_text_has_issues("global user rules", section, rules_pack)
     if strict and issues:
         raise ValueError("Global rules contain unsafe leftovers: " + "; ".join(issues))
@@ -806,6 +826,25 @@ def sync_global_rules(
         path, heading = paths[host]
         merge_marked_file(path, heading, section, dry_run)
         print(f"[global] host={host} path={path}")
+    install_version_checker(rules_pack, resolved_home, dry_run)
+
+
+def install_version_checker(rules_pack: Path, user_home: Path, dry_run: bool) -> None:
+    checker_source = Path(__file__).resolve().with_name("check_android_easy_rules_version.py")
+    version_source = rules_pack / "VERSION"
+    destinations = (
+        (checker_source, user_home / ".android-easy-rules" / "check_version.py"),
+        (version_source, user_home / ".android-easy-rules" / "VERSION"),
+    )
+    for source, destination in destinations:
+        if not source.is_file():
+            raise FileNotFoundError(f"Version checker asset is missing: {source}")
+        if dry_run:
+            print(f"[dry-run] copy {source} -> {destination}")
+            continue
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+        print(f"[copy] {destination}")
 
 
 def import_rules(
@@ -816,6 +855,7 @@ def import_rules(
     global_hosts: list[str] | tuple[str, ...] = (),
     user_home: Path | None = None,
 ) -> None:
+    rules_version = read_rules_version(rules_pack)
     modules = detect_modules(target)
     app_module = detect_app_module(target, modules)
     values = detect_android_values(target, app_module)
@@ -824,7 +864,12 @@ def import_rules(
     memory_template = fill_template(read_text(rules_pack / "MEMORY.template.md"), values)
     validate_generated_texts(rules_pack, values, root_template, memory_template, strict=strict)
 
-    merge_marked_file(target / "AGENTS.md", root_template, generated_root_section(values), dry_run)
+    merge_marked_file(
+        target / "AGENTS.md",
+        root_template,
+        versioned_section(generated_root_section(values), rules_version),
+        dry_run,
+    )
     merge_thin_entrypoint(target / "CLAUDE.md", claude_entry(), dry_run)
     merge_thin_entrypoint(target / "GEMINI.md", gemini_entry(), dry_run)
     merge_thin_entrypoint(target / ".github" / "copilot-instructions.md", copilot_entry(), dry_run)
@@ -842,7 +887,7 @@ def import_rules(
             raise FileNotFoundError(message)
         print(f"[warning] {message}")
     copy_rule_files(rules_pack, target, dry_run)
-    copy_module_rules(rules_pack, target, app_module, values, dry_run)
+    copy_module_rules(rules_pack, target, app_module, values, rules_version, dry_run)
     sync_global_rules(
         rules_pack,
         global_hosts,

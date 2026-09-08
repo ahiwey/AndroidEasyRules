@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -16,6 +17,7 @@ PLUGIN_SKILLS_DIR = SKILL_DIR.parent
 PACK_DIR = SKILL_DIR / "assets" / "rules-pack"
 sys.path.insert(0, str(SCRIPT_DIR))
 import import_android_easy_rules as importer  # noqa: E402
+import check_android_easy_rules_version as version_checker  # noqa: E402
 
 
 def require(condition: bool, message: str) -> None:
@@ -83,6 +85,10 @@ def validate_static_pack() -> None:
         require(path.is_file(), f"missing rule file: {name}")
         text = read(path)
         require("\ufffd" not in text, f"invalid UTF-8 replacement character: {name}")
+    require(
+        "reasoning-playbooks.md" not in importer.RULE_FILES,
+        "reasoning playbooks must not be copied by the importer",
+    )
 
     global_rules = read(PACK_DIR / "global-AGENTS.md")
     root_rules = read(PACK_DIR / "root-AGENTS.template.md")
@@ -93,6 +99,13 @@ def validate_static_pack() -> None:
     memory_template = read(PACK_DIR / "MEMORY.template.md")
     import_rules = read(PACK_DIR / "IMPORT.md")
     readme = read(PACK_DIR / "README.md")
+    rules_version = read(PACK_DIR / "VERSION").strip()
+    require(rules_version == "0.5.0", "rules-pack VERSION is not 0.5.0")
+    require(importer.read_rules_version(PACK_DIR) == rules_version, "importer VERSION parsing failed")
+    require(
+        (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
+        "version checker script is missing",
+    )
 
     collaboration_tokens = (
         "苏格拉底式提问",
@@ -133,20 +146,32 @@ def validate_static_pack() -> None:
         require(method in reasoning_skill, f"reasoning skill menu is missing: {method}")
     require("仅在用户明确要求" in reasoning_rules, "sensitive self-exploration opt-in is missing")
     require("不自动创建子代理" in reasoning_rules, "expert-view delegation boundary is missing")
-    require("AGENTS/reasoning-playbooks.md" in root_rules, "root reasoning route is missing")
+    require("AGENTS/reasoning-playbooks.md" not in root_rules, "root reasoning route must not be imported")
     require(
-        "AGENTS/reasoning-playbooks.md" in importer.generated_agents_section(),
-        "generated reasoning route is missing",
+        "AGENTS/reasoning-playbooks.md" not in importer.generated_agents_section(),
+        "generated reasoning route must not be imported",
     )
-    require("推理与决策方法路由" in global_rules, "global reasoning route is missing")
+    require("推理与决策方法路由" not in global_rules, "global reasoning route must not be imported")
+    for token in (
+        "AndroidEasyRules 版本提醒",
+        "只在一个新任务的首轮检查一次",
+        "status` 为 `notify",
+        "7 天后提醒",
+        "忽略此版本",
+    ):
+        require(token in global_rules, f"version reminder rule is missing: {token}")
     for text, label in (
-        (global_rules, "global-AGENTS.md"),
-        (root_rules, "root-AGENTS.template.md"),
         (reasoning_rules, "reasoning-playbooks.md"),
-        (importer.generated_agents_section(), "generated_agents_section"),
     ):
         for token in ("常见Prompt", "思考菜单"):
             require(token in text, f"unified reasoning entry is missing from {label}: {token}")
+    for text, label in (
+        (global_rules, "global-AGENTS.md"),
+        (root_rules, "root-AGENTS.template.md"),
+        (importer.generated_agents_section(), "generated_agents_section"),
+    ):
+        for token in ("常见Prompt", "思考菜单", "推理与决策方法路由"):
+            require(token not in text, f"reasoning route leaked into {label}: {token}")
 
     require("Quick 默认预算" in root_rules, "Quick execution budget is missing")
     require("用户称呼与索引对齐" in root_rules, "index naming alignment rule is missing")
@@ -198,7 +223,7 @@ def validate_static_pack() -> None:
 
     plugin = json.loads(read(SKILL_DIR.parent.parent / ".codex-plugin" / "plugin.json"))
     require(plugin["name"] == "android-easy-rules", "plugin name is inconsistent")
-    require(plugin["version"].startswith("0.4."), "plugin version was not bumped for reasoning skill")
+    require(plugin["version"].startswith("0.5."), "plugin version was not bumped for version reminders")
     require("./skills/" in plugin["skills"], "plugin skills path is missing")
     require(plugin["interface"]["defaultPrompt"], "plugin default prompt is empty")
     require("常见Prompt" in plugin["interface"]["defaultPrompt"], "plugin menu entry is missing")
@@ -292,12 +317,26 @@ android {
 def validate_fixture_import() -> None:
     with TemporaryDirectory(prefix="android-easy-rules-") as temp:
         target = Path(temp)
+        user_home = target / "unused-user-home"
         create_fixture(target)
         before_dry_run = snapshot_tree(target)
-        importer.import_rules(target, PACK_DIR, dry_run=True, strict=True)
+        importer.import_rules(
+            target,
+            PACK_DIR,
+            dry_run=True,
+            strict=True,
+            user_home=user_home,
+        )
         require(before_dry_run == snapshot_tree(target), "dry-run modified the fixture")
 
-        importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+        importer.import_rules(
+            target,
+            PACK_DIR,
+            dry_run=False,
+            strict=True,
+            user_home=user_home,
+        )
+        require(not user_home.exists(), "ordinary project import wrote user-level files")
 
         root_agents = read(target / "AGENTS.md")
         memory = read(target / "MEMORY.md")
@@ -311,6 +350,14 @@ def validate_fixture_import() -> None:
         for topic in ("Compose", "Navigation", "Room", "WebView/JSBridge/assets", "Firebase", "Health Connect", "地图", "通知"):
             require(topic in root_agents, f"capability route missing: {topic}")
         require("ble-core/AGENTS.md" in memory, "BLE module route missing")
+        require("reasoning-playbooks.md" not in root_agents, "reasoning route was imported into root rules")
+        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.5.0 -->"
+        require(root_agents.count(version_marker) == 1, "root rules version marker is invalid")
+        require(app_agents.count(version_marker) == 1, "app rules version marker is invalid")
+        require(
+            not (target / "AGENTS" / "reasoning-playbooks.md").exists(),
+            "reasoning playbooks were copied into the target project",
+        )
 
         expected_rules = {Path("AGENTS") / name for name in importer.RULE_FILES}
         require(all((target / path).is_file() for path in expected_rules), "not all focused rules were copied")
@@ -338,11 +385,36 @@ def validate_fixture_import() -> None:
             require(str(PACK_DIR) not in content, f"source rules-pack path leaked into {path}")
 
         before = {path: read(path) for path in generated_files}
-        importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+        importer.import_rules(
+            target,
+            PACK_DIR,
+            dry_run=False,
+            strict=True,
+            user_home=user_home,
+        )
         after = {path: read(path) for path in generated_files}
         changed = [str(path.relative_to(target)) for path in generated_files if before[path] != after[path]]
         require(before == after, "second import is not idempotent: " + ", ".join(changed))
         require(root_agents.count(importer.MARKER_START) == 1, "root AGENTS marker was duplicated")
+
+
+def validate_legacy_marker_upgrade() -> None:
+    with TemporaryDirectory(prefix="android-easy-rules-legacy-") as temp:
+        target = Path(temp)
+        create_fixture(target)
+        existing = (
+            "# Existing project rules\n\nKeep this project-specific rule.\n\n"
+            f"{importer.MARKER_START}\nOld imported rules\n{importer.MARKER_END}\n"
+        )
+        write(target / "AGENTS.md", existing)
+        importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+        merged = read(target / "AGENTS.md")
+        require("Keep this project-specific rule." in merged, "legacy user rules were lost")
+        require("Old imported rules" not in merged, "legacy marked rules were not replaced")
+        require(
+            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.5.0 -->") == 1,
+            "legacy project did not receive one current version marker",
+        )
 
 
 def validate_existing_entrypoint_merge() -> None:
@@ -406,7 +478,15 @@ def validate_global_rule_sync() -> None:
             else:
                 require(merged.startswith(heading), f"new global rule heading is invalid: {host}")
             require(merged.count(importer.MARKER_START) == 1, f"global marker count is invalid: {path}")
-            require("推理与决策方法路由" in merged, f"reasoning routes are missing: {path}")
+            require(
+                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.5.0 -->") == 1,
+                f"global version marker is invalid: {path}",
+            )
+            require("推理与决策方法路由" not in merged, f"reasoning route leaked into: {path}")
+
+        checker_home = user_home / ".android-easy-rules"
+        require((checker_home / "check_version.py").is_file(), "global sync did not install checker")
+        require(read(checker_home / "VERSION").strip() == "0.5.0", "global VERSION is invalid")
 
         before = snapshot_tree(user_home)
         importer.sync_global_rules(
@@ -417,6 +497,160 @@ def validate_global_rule_sync() -> None:
             user_home=user_home,
         )
         require(before == snapshot_tree(user_home), "global rule sync is not idempotent")
+
+
+def validate_version_checker() -> None:
+    now = 1_800_000_000.0
+    with TemporaryDirectory(prefix="android-easy-rules-checker-") as temp:
+        root = Path(temp)
+        project = root / "project"
+        state_dir = root / "state"
+        local_version = root / "VERSION"
+        project.mkdir()
+        write(local_version, "0.5.0\n")
+        write(project / "AGENTS.md", "# Legacy project rules\n")
+        project_before = snapshot_tree(project)
+
+        remote_calls = 0
+
+        def fetch_current() -> str:
+            nonlocal remote_calls
+            remote_calls += 1
+            return "0.5.0"
+
+        first = version_checker.check_project(
+            project,
+            state_dir=state_dir,
+            local_version_file=local_version,
+            remote_fetcher=fetch_current,
+            now=now,
+        )
+        second = version_checker.check_project(
+            project,
+            state_dir=state_dir,
+            local_version_file=local_version,
+            remote_fetcher=fetch_current,
+            now=now + 60,
+        )
+        require(first["status"] == "notify" and first["current"] == "legacy", "legacy project was not notified")
+        require(second.get("reason") == "already_notified", "same version reminder was repeated")
+        require(remote_calls == 1, "remote VERSION TTL did not suppress a repeated request")
+        require(project_before == snapshot_tree(project), "version check modified the target project")
+        require(str(project.resolve()) not in read(state_dir / "state.json"), "state leaked the project path")
+
+        version_checker.update_preference(
+            project,
+            action="snooze",
+            days=7,
+            state_dir=state_dir,
+            now=now + 60,
+        )
+        snoozed = version_checker.check_project(
+            project,
+            state_dir=state_dir,
+            local_version_file=local_version,
+            remote_fetcher=fetch_current,
+            now=now + 24 * 60 * 60,
+        )
+        after_snooze = version_checker.check_project(
+            project,
+            state_dir=state_dir,
+            local_version_file=local_version,
+            remote_fetcher=fetch_current,
+            now=now + 8 * 24 * 60 * 60,
+        )
+        require(snoozed.get("reason") == "snoozed", "seven-day snooze was not honored")
+        require(after_snooze["status"] == "notify", "snoozed reminder did not return after expiry")
+
+        version_checker.update_preference(
+            project,
+            action="ignore",
+            version="0.5.0",
+            state_dir=state_dir,
+            now=now + 8 * 24 * 60 * 60,
+        )
+        ignored = version_checker.check_project(
+            project,
+            state_dir=state_dir,
+            local_version_file=local_version,
+            remote_fetcher=fetch_current,
+            now=now + 9 * 24 * 60 * 60,
+        )
+        require(ignored.get("reason") == "ignored_version", "ignored version was notified again")
+
+        newer = version_checker.check_project(
+            project,
+            state_dir=state_dir,
+            local_version_file=local_version,
+            remote_fetcher=lambda: "0.6.0",
+            now=now + 16 * 24 * 60 * 60,
+        )
+        require(newer["status"] == "notify" and newer["latest"] == "0.6.0", "newer version did not notify")
+
+        write(
+            project / "AGENTS.md",
+            "# Rules\n\n<!-- ANDROID_EASY_RULES_VERSION: 0.6.0 -->\n",
+        )
+        current = version_checker.check_project(
+            project,
+            state_dir=state_dir,
+            local_version_file=local_version,
+            remote_fetcher=lambda: "0.6.0",
+            now=now + 16 * 24 * 60 * 60 + 60,
+        )
+        require(current["status"] == "current", "current project was reported as outdated")
+
+        write(
+            project / "AGENTS.md",
+            "# Rules\n\n<!-- ANDROID_EASY_RULES_VERSION: not-semver -->\n",
+        )
+        invalid = version_checker.check_project(
+            project,
+            state_dir=state_dir,
+            local_version_file=local_version,
+            remote_fetcher=lambda: "0.6.0",
+            now=now + 16 * 24 * 60 * 60 + 120,
+        )
+        require(invalid.get("reason") == "invalid_project_version", "invalid project version was accepted")
+
+    with TemporaryDirectory(prefix="android-easy-rules-checker-offline-") as temp:
+        root = Path(temp)
+        project = root / "project"
+        project.mkdir()
+        missing_local = root / "missing-VERSION"
+        result = version_checker.check_project(
+            project,
+            state_dir=root / "state",
+            local_version_file=missing_local,
+            remote_fetcher=lambda: (_ for _ in ()).throw(OSError("offline")),
+            now=now,
+        )
+        require(result["status"] == "unknown", "offline check without cache made a false latest claim")
+
+    with TemporaryDirectory(prefix="android-easy-rules-checker-parallel-") as temp:
+        root = Path(temp)
+        project = root / "project"
+        state_dir = root / "state"
+        local_version = root / "VERSION"
+        project.mkdir()
+        write(project / "AGENTS.md", "# Legacy project rules\n")
+        write(local_version, "0.5.0\n")
+
+        def run_parallel_check() -> dict:
+            return version_checker.check_project(
+                project,
+                state_dir=state_dir,
+                local_version_file=local_version,
+                remote_fetcher=lambda: "0.5.0",
+                now=now,
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(lambda _: run_parallel_check(), range(2)))
+        require(
+            sum(result["status"] == "notify" for result in results) == 1,
+            "parallel checks produced duplicate notifications",
+        )
 
 
 def validate_multidimension_flavor_import() -> None:
@@ -448,9 +682,12 @@ def health_report() -> tuple[int, str]:
             "编译速度优化" in read(PACK_DIR / "testing-build-rules.md"),
             "A+" in importer.generated_agents_section(),
             "苏格拉底式提问" in importer.generated_agents_section(),
-            "reasoning-playbooks.md" in importer.generated_agents_section(),
+            "reasoning-playbooks.md" not in importer.generated_agents_section(),
             "隐藏天赋探索" in read(PACK_DIR / "reasoning-playbooks.md"),
             set(importer.GLOBAL_HOSTS) == {"codex", "claude", "workbuddy"},
+            read(PACK_DIR / "VERSION").strip() == "0.5.0",
+            (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
+            "AndroidEasyRules 版本提醒" in read(PACK_DIR / "global-AGENTS.md"),
             "@./AGENTS.md" in importer.gemini_entry(),
             "@../AGENTS.md" in importer.copilot_entry(),
         ]
@@ -470,8 +707,10 @@ def health_report() -> tuple[int, str]:
 def main() -> int:
     validate_static_pack()
     validate_fixture_import()
+    validate_legacy_marker_upgrade()
     validate_existing_entrypoint_merge()
     validate_global_rule_sync()
+    validate_version_checker()
     validate_multidimension_flavor_import()
     score, grade = health_report()
     require(grade == "A+", f"health grade is below A+: score={score} grade={grade}")
