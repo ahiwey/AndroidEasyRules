@@ -116,6 +116,7 @@ def validate_static_pack() -> None:
     testing_rules = read(PACK_DIR / "testing-build-rules.md")
     screenshot_rules = read(PACK_DIR / "screenshot-ui-rules.md")
     custom_view_rules = read(PACK_DIR / "custom-view-chart-rules.md")
+    ble_rules = read(PACK_DIR / "ble-module-AGENTS.template.md")
     reasoning_rules = read(PACK_DIR / "reasoning-playbooks.md")
     memory_template = read(PACK_DIR / "MEMORY.template.md")
     import_rules = read(PACK_DIR / "IMPORT.md")
@@ -138,6 +139,7 @@ def validate_static_pack() -> None:
         "实质交付",
         "沉淀为 Skill",
         "AndroidSampleSkill",
+        "逐项标注",
     )
     for text, label in (
         (global_rules, "global-AGENTS.md"),
@@ -203,6 +205,11 @@ def validate_static_pack() -> None:
     require("android-fast-workflow" in root_rules, "fast workflow skill routing is missing")
     require("状态 × 事件 × 期望输出" in root_rules, "state transition matrix rule is missing")
     require("返工信号" in global_rules and "返工信号" in root_rules, "rework evidence loop is missing")
+    require(
+        all("低成本前置条件探测" in text for text in (global_rules, root_rules, importer.generated_agents_section())),
+        "command precondition probe rule is missing",
+    )
+    require("时间语义表" in ble_rules and "currDay" in ble_rules, "cross-day time semantics rule is missing")
     require("Rework:" in fast_workflow, "fast workflow rework route is missing")
     require("别名与索引命名" in memory_template, "MEMORY alias table is missing")
     require("热点页面索引模板" in memory_template, "hot page index template is missing")
