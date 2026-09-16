@@ -43,6 +43,17 @@ def snapshot_tree(root: Path) -> dict[str, bytes]:
 
 
 def validate_static_pack() -> None:
+    for filename in ('global-AGENTS.md', 'root-AGENTS.template.md', 'screenshot-ui-rules.md', 'testing-build-rules.md'):
+        text = read(PACK_DIR / filename)
+        for token in ('仅静态检查', 'Paparazzi', '不运行 Paparazzi、ADB/设备探测'):
+            require(token in text, f'{filename}: missing explicit visual acceptance boundary: {token}')
+    for filename, tokens in {
+        'screenshot-ui-rules.md': ('原分辨率', '左标签右数值', '实际布局/代码绑定'),
+        'image-resource-rules.md': ('只复制到 res 不等于应用完成', 'not_found_in_scope', '指标/强调色'),
+        'custom-view-chart-rules.md': ('柱宽/柱距', '非零数据分开验收', '新录 baseline'),
+    }.items():
+        for token in tokens:
+            require(token in read(PACK_DIR / filename), f'{filename}: missing visual evidence rule: {token}')
     skill_text = read(SKILL_DIR / "SKILL.md")
     fast_workflow = read(PLUGIN_SKILLS_DIR / "android-fast-workflow" / "SKILL.md")
     karpathy_skill_dir = PLUGIN_SKILLS_DIR / "karpathy-guidelines"
