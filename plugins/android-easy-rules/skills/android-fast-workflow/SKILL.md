@@ -45,6 +45,8 @@ This skill owns routing, scope and verification selection. The available Lanhu s
 Complete implementation and minimal static checks, fix findings, then ask once whether to add Paparazzi, device/emulator screenshots, or skip visual verification. Reuse an existing in-scope choice; do not ask at proposal/intake by default.
 Before a choice, do not run Paparazzi or probe/use devices. Paparazzi does not authorize ADB or dependencies; check existing setup and confirm integration cost if missing. Only the device route permits scoped device actions.
 Follow project rules for minimal resource/compile/unit checks; report static, visual and runtime evidence separately. These boundaries also apply without project rules.
+Separate component snapshots, pure state/storage tests and real host/navigation evidence; delegate deterministic fixtures and screenshot-host limits to Lanhu verification guidance. Pending-state fixtures do not exercise requests.
+After interruption, reuse in-scope authorization and still-current artifacts; resume the first incomplete build/install/launch/scenario stage. Read final reports once rather than repeatedly polling log tails. Another task's device authorization does not transfer.
 
 ## Compile Speed
 
