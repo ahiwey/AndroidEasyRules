@@ -568,7 +568,8 @@ def generated_agents_section() -> str:
 - 用户要求 Android Studio 构建优先或允许 Codex 超时跳过时，运行 Gradle 前先检查实际活跃构建；已有构建就直接跳过。空闲时只运行最窄任务并限制并发，超时只取消 Codex 本次调用，不停止共享 daemon。
 - 运行 Gradle 前先确认目标模块真实存在的 task 名；若出现 `Task not found`、flavor/buildType 变化或命令不确定，先读 `settings.gradle*` 与目标模块 `build.gradle*`，必要时运行 `.\\gradlew.bat :<module>:tasks --all` 枚举后再选择。
 - Android 单测过滤优先使用 `--tests '*TargetTest*'` 通配形式。
-- 导入/导出规则包后必须跑 AndroidEasyRules validator 和一次 `--dry-run --strict`；健康评分应达到 `A+` 或更高，否则继续修正规则完整性、占位符、来源污染、索引命名和幂等问题。"""
+- UI 任务先实现、完成最小静态检查并处理发现的问题，再询问 Paparazzi、设备截图或暂不视觉验证；沿用本范围已有选择，选择前不运行 Paparazzi 或探测设备，Paparazzi 不授权设备操作或新增依赖。
+- 导入/导出规则包后必须跑 AndroidEasyRules validator 和一次 `--dry-run --strict`；健康评分应达到 `A+` 或更高，否则继续修正规则完整性、占位符、来源污染、索引命名和幂等问题。此分数仅代表规则包结构与导入完整性；Skill 效果须有代表案例与工具行为证据，App 整体 A+ 须有当前视觉及必要运行证据。"""
 
 
 def generated_root_section(values: dict[str, str]) -> str:

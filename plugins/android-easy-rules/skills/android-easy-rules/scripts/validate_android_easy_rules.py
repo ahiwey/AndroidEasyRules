@@ -758,7 +758,8 @@ def main() -> int:
     validate_multidimension_flavor_import()
     score, grade = health_report()
     require(grade == "A+", f"health grade is below A+: score={score} grade={grade}")
-    print(f"AndroidEasyRules validation passed health_score={score} health_grade={grade}")
+    print(f"AndroidEasyRules validation passed health_score={score} health_grade={grade} "
+          "grade_scope=pack_structure_and_import_integrity behavioral_quality=not_scored app_visual_quality=not_scored")
     return 0
 
 

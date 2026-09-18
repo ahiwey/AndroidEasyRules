@@ -116,4 +116,4 @@ python scripts/validate_android_easy_rules.py
 python scripts/import_android_easy_rules.py <target-project-root> --dry-run --strict
 ```
 
-The validator must report `health_grade=A+` or higher before exporting or publishing the rules pack.
+The validator must report `health_grade=A+` or higher before exporting or publishing the rules pack. This is pack structure/import integrity only, not Skill behavior or App visual quality. Workflow/tool changes also need observable case replay and relevant tool tests; report unverified behavior separately rather than assigning a quality score from keywords.
