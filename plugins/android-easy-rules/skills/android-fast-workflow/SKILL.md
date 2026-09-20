@@ -40,6 +40,7 @@ This skill owns routing, scope and verification selection. The available Lanhu s
 - Structure, icon identity, color roles, chart semantics and required actions are correctness requirements; a few anchors or an all-zero screenshot cannot prove whole-page completion.
 - Format/pack health is not behavioral quality; historical screenshots do not validate changed source.
 - A label, range or unit change must still match the actual bound metric; use Lanhu's pre-patch check for affected data semantics, chart policy, shared callbacks/themes and locale scope. Do not force a pure style fix through unrelated data checks.
+- Follow the user's confirmed product/design precedence. Map settings sheets and draft states to their host instead of treating every image as a page or inferring actions from icon shape. For mixed storage and device/App fallback, use Lanhu's state-modeling guidance; preserve the confirmed per-data isolation and verify each delivery channel separately.
 
 ## Verification Order
 
@@ -48,6 +49,7 @@ Before a choice, do not run Paparazzi or probe/use devices. Paparazzi does not a
 Follow project rules for minimal resource/compile/unit checks; report static, visual and runtime evidence separately. These boundaries also apply without project rules.
 Separate component snapshots, pure state/storage tests and real host/navigation evidence; delegate deterministic fixtures and screenshot-host limits to Lanhu verification guidance. Pending-state fixtures do not exercise requests.
 After interruption, reuse in-scope authorization and still-current artifacts; resume the first incomplete build/install/launch/scenario stage. Read final reports once rather than repeatedly polling log tails. Another task's device authorization does not transfer.
+On an authorized device route, check the active identity, required profile/capability and peripheral connection before an expensive build. A stored profile for another identity does not satisfy the entry condition. Keep temporary test writes scoped and verify restoration; do not expose private data, reset unrelated state or change production exports merely to enable QA. Missing prerequisites remain unverified, separate from build/install success.
 
 ## Compile Speed
 
