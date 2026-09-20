@@ -39,6 +39,7 @@ This skill owns routing, scope and verification selection. The available Lanhu s
 - General UI/UX review is optional for whole redesigns or a requested experience review.
 - Structure, icon identity, color roles, chart semantics and required actions are correctness requirements; a few anchors or an all-zero screenshot cannot prove whole-page completion.
 - Format/pack health is not behavioral quality; historical screenshots do not validate changed source.
+- A label, range or unit change must still match the actual bound metric; use Lanhu's pre-patch check for affected data semantics, chart policy, shared callbacks/themes and locale scope. Do not force a pure style fix through unrelated data checks.
 
 ## Verification Order
 
@@ -58,8 +59,11 @@ After interruption, reuse in-scope authorization and still-current artifacts; re
 - When Gradle is idle and verification is necessary, use the narrowest task with `--max-workers=1 --no-parallel` and an explicit timeout. Cancel only the invocation started by Codex; never use `gradlew --stop`, `clean`, or terminate unknown Java processes to gain capacity.
 - Do not create a worktree or copy just to speed up compilation; use one only when file-state or branch isolation is the actual requirement.
 - Never rerun a larger Gradle task just for comfort; explain the chosen verification boundary in the final response.
+- Finish the scoped locale batch before its minimal validation; a few hints or labels do not justify repeated assemble. For approved screenshot-framework setup, reuse project-verified configuration and diagnose actual compatibility failures without exporting project-specific dependency pins as universal fixes.
 
 ## MEMORY.md Closeout
+
+When reviewing/resuming tasks, keep the released baseline, approved scope, dated evidence, fixed/unverified items and next step. Filter history responses before displaying them; missing latest-turn content is a retrieval gap, not proof that an old failure persists. Lanhu's maintenance reference owns detailed case replay; ordinary App work does not load that audit.
 
 - If a task reveals a recurring page, user alias, renamed entry, moved business directory, or wrong index, update `MEMORY.md` in the same turn.
 - Hot pages should be indexed as: user aliases, standard entry, UI/layout files, data/adapter files, resources, and key risks.
