@@ -1,78 +1,49 @@
 ---
 name: android-fast-workflow
-description: Fast Android task routing for screenshot recognition and design implementation, slice matching, shared-resource reuse or replacement, visual QA, focused fixes and verification, compile/build speed, and MEMORY.md name mismatch.
+description: Route Android screenshot recognition, implementation and focused fixes, including compile/build speed and MEMORY.md name mismatch. Uses the smallest relevant workflow and handles shared build/device contention; not a rules importer.
 ---
 
 # Android Fast Workflow
 
-Use this skill to keep Android work fast, visual, and verifiable without loading unrelated process.
+Own routing, scope and verification selection. Lanhu owns design interpretation and page/state implementation; Android Easy Rules owns rule import/maintenance. Load each owner once and reuse one mapping. A plugin mention during App work does not request a rules import.
 
 ## Route First
 
-1. Known files/functions skip the index; otherwise map the user's words to the canonical `MEMORY.md` index name.
-   - Search `MEMORY.md` for user aliases, page names, resource names, error text, and class names.
-   - If one match is clear, proceed and lightly mention the mapped index name.
-   - If one phrase maps to multiple real areas and the answer changes implementation, ask only the deciding question.
+- Known file/function: skip MEMORY.md. Otherwise search aliases, page/resource names or error text in the index; read nearest module rules. Ask only if multiple real areas change implementation.
+- Quick: precise file, resource value, layout delta or known fix. Smallest patch/check; no unrelated data, device or full UI audit.
+- Strict: BLE/protocol, SDK/AAR, migration, R8/release or state/ownership bugs. Relevant focused workflow and small state × event × expected-output matrix.
+- Analysis-only: inspect/compare/plan without edits. A pending proposal is not an implementation to continue without confirmation.
+- Rework: “还是不对/没画好/继续微调/仍会复现”. Reopen latest affected evidence, parent layout/current diff and actual resource before editing; do not keep guessing parameters.
+- Approved plan: one current-diff feasibility check, then implement. Reopen only changed or disproven parts.
 
-2. Choose the smallest workflow.
-   - Quick: specific file, function, layout, resource key, screenshot delta, log line, or known fix.
-   - Strict: BLE/protocol, SDK/AAR, commit migration, R8/minify, permissions/release, cross-module device flows, or async state bugs.
-   - Analysis-only: user asks to inspect, compare, explain, or plan without asking for edits.
-   - Rework: user says “还是不对”, “没画好”, “继续微调”, or “仍会复现”. Reopen the latest evidence and current diff before editing; do not treat this as another parameter-only Quick pass.
+## Pick One Implementation Path
 
-3. Pick focused rules only.
-   - Lanhu/local multi-page designs: use available `lanhu-android-fast-workflow` plus only the needed project rules below. Keep one mapping and workflow; do not load both full workflows again. A local screenshot delta stays Quick.
-   - Screenshot/UI: `AGENTS/screenshot-ui-rules.md`.
-   - Images/icons/resources: `AGENTS/image-resource-rules.md`.
-   - Custom View/charts: `AGENTS/custom-view-chart-rules.md`.
-   - Tests/builds: `AGENTS/testing-build-rules.md`.
-   - Commit/branch migration: `$commit-migration` plus `AGENTS/commit-migration-rules.md`.
-   - R8/ProGuard: `$r8-analyzer` plus `AGENTS/r8-proguard-rules.md`.
+| Trigger | Owner / focused rule |
+| --- | --- |
+| Lanhu/local design directories or multiple pages/states | Available `lanhu-android-fast-workflow`; only needed screenshot/resource/chart rules |
+| Local screenshot delta | `AGENTS/screenshot-ui-rules.md` |
+| Images/icons/shared resources | `AGENTS/image-resource-rules.md` |
+| Canvas/charts | `AGENTS/custom-view-chart-rules.md` |
+| Commit/branch migration | `commit-migration` and project migration rules |
+| R8/minify | `r8-analyzer` and project R8 rules |
+| Build, device, stateful bug or interrupted verification | [Verification](references/verification.md) and relevant project testing rules |
 
-## Design Handoff
+Do not install missing skills automatically. Without Lanhu, use project screenshot/resource/chart rules. General UI/UX review is for a whole redesign or requested experience review.
 
-This skill owns routing, scope and verification selection. The available Lanhu skill owns design interpretation, asset/component mapping and page/state implementation. Keep one workflow and mapping, not two full reviews.
+## Implementation Checkpoint
 
-- Design directories/multiple states: hand off once to `lanhu-android-fast-workflow`; read only relevant focused rules.
-- Local screenshot fix: inspect the actual target image, parent layout and current diff. Rework reopens changed evidence, not the entire project.
-- Missing Lanhu skill: follow project screenshot/resource/chart rules; do not install automatically.
-- General UI/UX review is optional for whole redesigns or a requested experience review.
-- Structure, icon identity, color roles, chart semantics and required actions are correctness requirements; a few anchors or an all-zero screenshot cannot prove whole-page completion.
-- Format/pack health is not behavioral quality; historical screenshots do not validate changed source.
-- A label, range or unit change must still match the actual bound metric; use Lanhu's pre-patch check for affected data semantics, chart policy, shared callbacks/themes and locale scope. Do not force a pure style fix through unrelated data checks.
-- Follow the user's confirmed product/design precedence. Map settings sheets and draft states to their host instead of treating every image as a page or inferring actions from icon shape. For mixed storage and device/App fallback, use Lanhu's state-modeling guidance; preserve the confirmed per-data isolation and verify each delivery channel separately.
+Reuse shared components against one confirmed contract: canonical implementation, specification source, callbacks/state keys and real call sites. Check existing/concurrent changes before proposing dimensions. A new page consumes the contract; a scoped common change updates it once. Conflicting product chapters or active changes require a decision on that conflict only; file timestamps are not approval.
 
-## Verification Order
+Check only affected data labels/fields/units/ranges, chart semantics, locales and shared behavior. Respect product/design precedence; distinguish page, dialog and draft states. Missing backend support remains a declared draft/placeholder boundary. Whole-background continuity and animation follow the Lanhu visual contract; copied assets or all-zero screenshots do not prove completion.
 
-Complete implementation and minimal static checks, fix findings, then ask once whether to add Paparazzi, device/emulator screenshots, or skip visual verification. Reuse an existing in-scope choice; do not ask at proposal/intake by default.
-Before a choice, do not run Paparazzi or probe/use devices. Paparazzi does not authorize ADB or dependencies; check existing setup and confirm integration cost if missing. Only the device route permits scoped device actions.
-Follow project rules for minimal resource/compile/unit checks; report static, visual and runtime evidence separately. These boundaries also apply without project rules.
-Separate component snapshots, pure state/storage tests and real host/navigation evidence; delegate deterministic fixtures and screenshot-host limits to Lanhu verification guidance. Pending-state fixtures do not exercise requests.
-After interruption, reuse in-scope authorization and still-current artifacts; resume the first incomplete build/install/launch/scenario stage. Read final reports once rather than repeatedly polling log tails. Another task's device authorization does not transfer.
-On an authorized device route, check the active identity, required profile/capability and peripheral connection before an expensive build. A stored profile for another identity does not satisfy the entry condition. Keep temporary test writes scoped and verify restoration; do not expose private data, reset unrelated state or change production exports merely to enable QA. Missing prerequisites remain unverified, separate from build/install success.
+## Verification Selection
 
-## Compile Speed
+Implement, complete minimal static checks and fix findings; then ask once for Paparazzi, device/emulator or static only, unless selected in this scope. Before selection, do not run screenshots or probe/use devices. Paparazzi does not authorize ADB or dependencies. Existing values usually need static checks; new resources may need one resource task; type boundaries one compile/test; an APK or uncovered integration boundary may need assemble. Details and shared-session contention handling are in [Verification](references/verification.md).
 
-- Existing values, layout attributes, colors, copy, and numeric parameters: static diff first; additional visual validation follows the order above. Paparazzi stays off-device, and skipped verification remains unverified.
-- New or renamed resources/XML ids: one focused `process<Flavor>DebugResources` task when available.
-- Kotlin/Java signature or type boundary changes: one focused compile task or directly relevant unit test.
-- APK/AAR, manifest, signing, Gradle, dependency, or release behavior: affected assemble only when the smaller task cannot cover the integration boundary.
-- When the user prioritizes Android Studio or allows Codex build timeouts, check for an actually active Gradle build before starting; an idle persistent daemon is not active work. Skip immediately when another build is active and report the missing verification.
-- When Gradle is idle and verification is necessary, use the narrowest task with `--max-workers=1 --no-parallel` and an explicit timeout. Cancel only the invocation started by Codex; never use `gradlew --stop`, `clean`, or terminate unknown Java processes to gain capacity.
-- Do not create a worktree or copy just to speed up compilation; use one only when file-state or branch isolation is the actual requirement.
-- Never rerun a larger Gradle task just for comfort; explain the chosen verification boundary in the final response.
-- Finish the scoped locale batch before its minimal validation; a few hints or labels do not justify repeated assemble. For approved screenshot-framework setup, reuse project-verified configuration and diagnose actual compatibility failures without exporting project-specific dependency pins as universal fixes.
+Report static, component visual and real-host/runtime evidence separately. Old screenshots, tests or installed APKs do not validate changed source; format health is not App quality.
 
-## MEMORY.md Closeout
+## Index and Resume
 
-When reviewing/resuming tasks, keep the released baseline, approved scope, dated evidence, fixed/unverified items and next step. Filter history responses before displaying them; missing latest-turn content is a retrieval gap, not proof that an old failure persists. Lanhu's maintenance reference owns detailed case replay; ordinary App work does not load that audit.
+Keep baseline, confirmed boundary, dated evidence, fixed/unverified items and next step. For task review, select by project and stated time/order, summarize before output, and distinguish proposals, questions, interrupted/empty turns and reports. A final-phase tag alone is not delivery. Missing recent text is a retrieval gap; consult scoped artifacts instead of treating old failure as current. Historical authorization never transfers.
 
-- If a task reveals a recurring page, user alias, renamed entry, moved business directory, or wrong index, update `MEMORY.md` in the same turn.
-- Hot pages should be indexed as: user aliases, standard entry, UI/layout files, data/adapter files, resources, and key risks.
-- Do not copy another project's business names into a generic rules pack; keep templates generic and let the importer fill project facts.
-
-## Stateful Bug Intake
-
-- For first-entry, cache, bind/unbind, foreground/background, reconnect, or duplicate-request bugs, write the smallest `state × event × expected output` matrix before editing.
-- Distinguish request-level success, attempt-level callbacks, and ownership/identity of the active object or GATT. Do not repair callback appearance until the event source and owner are proven.
-- If the user already approved a concrete plan, perform one current-diff feasibility check and implement it. Reopen diagnosis only when the code changed, verification fails, or new evidence invalidates the plan.
+Correct wrong indexes or changed business entries in MEMORY.md; use aliases, canonical entry, layout/data/resource locations and key risks. Do not store transient dimensions, task ownership or build status there; link existing product decisions or verification records. Keep project facts out of generic skills.

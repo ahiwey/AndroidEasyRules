@@ -1,119 +1,40 @@
 ---
 name: android-easy-rules
-description: Import adaptive Chinese Android AI-agent rules, default task-prompt enhancement, interview and proposal-before-implementation behavior, and Karpathy guidelines into a project, with optional explicit user-level sync for Codex, Claude, and WorkBuddy. Use when the user asks to import AndroidEasyRules, apply Android AGENTS rules, generate canonical AGENTS.md plus thin vendor entrypoints, or sync global AI rules.
+description: Import or maintain adaptive Chinese Android agent rules and the AndroidEasyRules pack, with optional explicitly requested user-level sync. Use for rules import, canonical AGENTS/thin entrypoints, rule maintenance or export; ordinary Android implementation does not require importing rules.
 ---
 
 # Android Easy Rules
 
-## Workflow
+Choose the operation before scanning or writing.
 
-Use this skill to install the bundled Android rules pack, or a compatible external AGENTS rules-pack directory, into the current Android project.
+| Request | Path |
+| --- | --- |
+| Import/apply/update project rules | [Import workflow](references/import-workflow.md); default target is the current Android project |
+| Explicit user-level sync | Same workflow with only requested `--global-hosts`; preview merged paths first |
+| Improve/audit this Skill or pack | Maintenance below; no App-wide scan or import merely because the plugin was mentioned |
+| Implement/fix an Android page | Available `android-fast-workflow` for routing, Lanhu for design; preserve existing rules |
 
-1. Identify the target project root.
-   - Default to the current working directory.
-   - If the user names another path, use that path.
-   - Do not import into a non-Android project unless the user explicitly asks for a generic rules import.
+Read the entrypoint once and only the reference for this operation. Do not install tools or pull a newer pack unless requested.
 
-2. Identify the rules pack.
-   - Default to the bundled `assets/rules-pack/` directory.
-   - If the user names an external rules-pack path such as `E:\...\AGENTS`, read that directory's `README.md` and `IMPORT.md` first.
-   - Use the importer with `--rules-pack <path>` for external packs.
-   - If the user asks to update from `ahiwey/AndroidEasyRules` or `https://github.com/ahiwey/AndroidEasyRules.git`, clone or pull that repository into a local cache directory first, then run the cached importer against the target project.
-   - Do not automatically update from GitHub just because a project is opened; only do it when the user explicitly asks for the latest AndroidEasyRules.
+## Maintenance and Export Rule Improvements
 
-3. Do a quick read-only project scan before writing:
-   - `settings.gradle` or `settings.gradle.kts`
-   - root and app `build.gradle` / `build.gradle.kts`
-   - existing `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `CODEBUDDY.md`, `MEMORY.md`, and module `AGENTS.md`
-   - obvious app, BLE, ChatKit, skin/theme, WebView/assets, Firebase, Health Connect, maps, background task, permission/notification, resource, and test directories
-
-4. Run the bundled importer:
-
-```bash
-python scripts/import_android_easy_rules.py <target-project-root>
-```
-
-Use `--strict` when validating the bundled pack or when an external pack must fail on missing rules or unfilled generated placeholders.
-
-For an external rules pack:
-
-```bash
-python scripts/import_android_easy_rules.py <target-project-root> --rules-pack <rules-pack-path>
-```
-
-Use `--dry-run` first when the target already has substantial rules files, when the user supplies an external rules pack, or when you need to preview generated paths.
-
-When the user explicitly asks to sync personal global rules, preview the requested hosts first:
-
-```bash
-python scripts/import_android_easy_rules.py <target-project-root> --global-hosts codex,claude,workbuddy --dry-run --strict
-```
-
-Remove `--dry-run` only after the paths and merged scope are confirmed. Without `--global-hosts`, do not modify user-level rule files.
-
-When global hosts are explicitly requested, the importer also installs the low-frequency version checker under `~/.android-easy-rules/`. It checks locally on the first turn of a new task, refreshes the GitHub `VERSION` cache at most every seven days, and never updates project rules without a separate explicit request.
-
-5. Review the generated or merged files:
-   - `AGENTS.md` is the canonical full AI-agent rule source for Codex and compatible tools such as Kimi Code, Qoder, and CodeBuddy.
-   - `CLAUDE.md`, `GEMINI.md`, and `.github/copilot-instructions.md` are thin entrypoints pointing to `AGENTS.md`.
-   - Do not create `CODEBUDDY.md` when it is absent because CodeBuddy falls back to `AGENTS.md`; when it already exists, merge only a marked thin entrypoint.
-   - `MEMORY.md` is a project index and must not contain source-project business details.
-   - The root rules and Karpathy guidelines provide default prompt enhancement, focused interviewing, and a proposal gate before non-trivial writes; explicit `优化提示词`、`先采访我`、`先给方案` and `直接做` entries override the default flow.
-   - `AGENTS/` also contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, commit migration, recording SDK/AAR flows, multilang strings, Android platform integration, neat-freak knowledge closeout, and R8/ProGuard.
-   - The plugin also provides `android-fast-workflow` for fast Android task routing, screenshot recognition, compile-speed decisions, and MEMORY.md alias alignment.
-   - The plugin separately provides `reasoning-playbooks` as an opt-in “常见 Prompt” skill. It is not copied into project or user-level rules by this importer.
-
-6. If the importer cannot infer a detail, replace placeholders conservatively:
-   - module list
-   - app module
-   - namespace/applicationId
-   - flavor-specific Gradle tasks
-   - main source package path
-
-## Merge Rules
-
-- Preserve existing user preferences and hard constraints.
-- Do not overwrite existing rules wholesale; use the marked AndroidEasyRules section or merge manually.
-- Do not copy source-project package names, branches, brands, signing config, privacy links, or business indexes.
-- Do not generate `CLUADE.md`; treat that spelling as a typo unless the user explicitly asks for compatibility.
-- Keep every vendor entrypoint thin so `AGENTS.md` remains the single complete rules source.
-- Keep global sync opt-in. Merge only the AndroidEasyRules marked section into `%USERPROFILE%/.codex/AGENTS.md`, `%USERPROFILE%/.claude/CLAUDE.md`, or `%USERPROFILE%/.codebuddy/CODEBUDDY.md`, preserving existing content.
-
-## Export Rule Improvements
-
-When a workflow audit or completed task improves agent root rules or project rules:
-
-- Separate reusable collaboration or Android behavior from project paths, brands, flavors, business facts, and one-off commands.
-- Keep project-specific facts only in that project's `AGENTS.md` or `MEMORY.md`.
-- Write generalized behavior into `global-AGENTS.md`, `root-AGENTS.template.md`, and the narrowest relevant focused rule or Skill.
-- Update the active current-computer rule as well; exporting to the source pack alone does not apply the change locally.
-- Run the validator and a representative importer `--dry-run --strict` before publishing.
-- Commit and push the AndroidEasyRules source only when publishing is authorized. An installed plugin cache is not a durable source because upgrades may overwrite it.
-- If AndroidEasyRules is unavailable, keep the improvement local and do not install or create it implicitly.
-
-## Bundled Resources
-
-- `assets/rules-pack/`: Android rules templates and focused rule files, including Chinese Karpathy behavior guidelines, Android platform integration rules, and neat-freak knowledge closeout rules adapted from `KKKKhazix/khazix-skills/neat-freak` under MIT License. Its `reasoning-playbooks.md` supports the standalone plugin skill and is intentionally excluded from imports.
-- `scripts/import_android_easy_rules.py`: conservative importer for AGENTS, CLAUDE, MEMORY, and `AGENTS/` rule files.
-- `scripts/validate_android_easy_rules.py`: standard-library self-check for pack completeness, UTF-8, source leakage, detection routes, idempotent fixture import, and A+ health score output.
+- Locate durable source and installed copy; check current diffs/baseline. Plugin cache alone is not durable; upgrades may replace it.
+- Use the confirmed proposal as the boundary. Read only changed rules/tools and relevant failure evidence; do not restart project discovery or import all templates.
+- Separate reusable behavior from project paths, brands, flavors, dimensions and runtime state. Put rules in their narrowest owner; route from other skills instead of duplicating full checklists.
+- Shared contracts belong in the project's existing product/specification record. Check affected references and implementation; do not export one project's button size, colors or first-run policy as defaults.
+- When root/project rules improve, generalize the applicable root rule into `assets/rules-pack/global-AGENTS.md` and `root-AGENTS.template.md`, with details in focused rules. Update active rules within authorized scope too; maintenance is not permission for unrelated global-host sync.
+- Validate source first, sync touched files to authorized installed/project copies, then compare hashes. Preserve unrelated edits. If source is unavailable, keep changes local; do not create/install a repository implicitly.
+- Commit/push/publish only with current-task authorization. Report source changes, local activation and publication separately.
 
 ## Validation
 
-After importing into a target project:
-
-- Read `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, and `MEMORY.md` as UTF-8.
-- Confirm every generated or merged vendor entrypoint points to `AGENTS.md` and does not duplicate the full rules.
-- Confirm imported project and user-level rules do not contain `AGENTS/reasoning-playbooks.md` or the “常见 Prompt” routing section.
-- Confirm imported project and user-level rules retain the default prompt-enhancement flow, proposal gate, and explicit override entries.
-- When global hosts were requested, confirm existing user rules were preserved, each target has one AndroidEasyRules marker, and a second sync is idempotent.
-- Confirm generated rules do not mention source-project-specific package names, flavors, branches, concrete local cache paths, or business names; generic variables such as `%USERPROFILE%` are allowed for the GitHub update flow.
-- Do not run Android Gradle for rules-only imports unless the user asks or the import also changes Android code/resources.
-
-For a rules-only change, run:
+For pack changes run the existing validator and strict import preview:
 
 ```bash
 python scripts/validate_android_easy_rules.py
 python scripts/import_android_easy_rules.py <target-project-root> --dry-run --strict
 ```
 
-The validator must report `health_grade=A+` or higher before exporting or publishing the rules pack. This is pack structure/import integrity only, not Skill behavior or App visual quality. Workflow/tool changes also need observable case replay and relevant tool tests; report unverified behavior separately rather than assigning a quality score from keywords.
+Validate affected Skill metadata/references and changed tools. Preserve user content, canonical AGENTS plus thin vendor entrypoints, source-fact isolation and import idempotence. Exact merge rules and import checks are in [Import workflow](references/import-workflow.md).
+
+Require `health_grade=A+` or higher for pack structure/import integrity; do not relax checks to attain it. Replay relevant cases against observable decisions/tool outputs; unknown stays unknown. Main-agent replay is not independent testing. App A+ needs current screenshots and necessary runtime behavior. Same-input output/latency measurements are proxies; unavailable Token data stays unavailable. Rules-only work does not run Android Gradle or device validation.
