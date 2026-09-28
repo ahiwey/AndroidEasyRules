@@ -43,6 +43,21 @@ def snapshot_tree(root: Path) -> dict[str, bytes]:
 
 
 def validate_static_pack() -> None:
+    rtl_name = "rtl-layout-rules.md"
+    require(rtl_name in importer.RULE_FILES, "RTL rules are not registered for import")
+    for filename in ("global-AGENTS.md", "root-AGENTS.template.md", "android-app-AGENTS.template.md",
+                     "chatkit-module-AGENTS.template.md", "screenshot-ui-rules.md", "image-resource-rules.md",
+                     "custom-view-chart-rules.md", "testing-build-rules.md"):
+        require(rtl_name in read(PACK_DIR / filename), f"{filename}: missing default RTL route")
+    require(rtl_name in importer.generated_agents_section(), "existing projects do not receive the RTL route")
+    require(rtl_name in read(PLUGIN_SKILLS_DIR / "android-fast-workflow" / "SKILL.md"),
+            "fast workflow bypasses the RTL checkpoint")
+    rtl_rules = read(PACK_DIR / rtl_name)
+    for token in ("RTL-01", "RTL-02", "RTL-03", "RTL-04", "RTL-05", "RTL-06", "RTL-07",
+                  "每次新增或修改", "未跟踪", "setPaddingRelative", "时间轴", "日期身份",
+                  "firstStrongLtr", "translatable=false", "supportsRtl = true", "LayoutDirection.RTL",
+                  "取消", "未验证", "代表案例回放"):
+        require(token in rtl_rules, f"RTL contract is incomplete: {token}")
     for filename in ('global-AGENTS.md', 'root-AGENTS.template.md', 'screenshot-ui-rules.md', 'testing-build-rules.md'):
         text = read(PACK_DIR / filename)
         for token in ('仅静态检查', 'Paparazzi', '不运行 Paparazzi、ADB/设备探测'):
@@ -385,6 +400,10 @@ def validate_fixture_import() -> None:
         root_agents = read(target / "AGENTS.md")
         memory = read(target / "MEMORY.md")
         app_agents = read(target / "app" / "AGENTS.md")
+        for route in (root_agents, app_agents, read(target / "chatkit" / "AGENTS.md")):
+            require("rtl-layout-rules.md" in route, "new project/module is missing the RTL checkpoint")
+        require(read(target / "AGENTS" / "rtl-layout-rules.md") == read(PACK_DIR / "rtl-layout-rules.md"),
+                "imported RTL contract differs from the source pack")
         require("namespace 为 `com.example.fixture`" in app_agents, "namespace was not inferred")
         require("默认 flavor 为 `demo`" in app_agents, "Kotlin DSL flavor was not inferred")
         require("健康评分应达到 `A+`" in root_agents, "A+ health scoring rule was not imported")
@@ -466,6 +485,8 @@ def validate_existing_entrypoint_merge() -> None:
         target = Path(temp)
         create_fixture(target)
         seeded = {
+            target / "AGENTS.md": "# Existing project rules\n\nKeep the product's week-start setting.\n",
+            target / "app" / "AGENTS.md": "# Existing app rules\n\nKeep the app-specific layout contract.\n",
             target / "CLAUDE.md": "# Existing Claude rules\n\nKeep this project-specific note.\n",
             target / "GEMINI.md": "# Existing Gemini rules\n\nKeep this project-specific note.\n",
             target / ".github" / "copilot-instructions.md": "# Existing Copilot rules\n\nKeep this project-specific note.\n",
@@ -474,7 +495,18 @@ def validate_existing_entrypoint_merge() -> None:
         for path, content in seeded.items():
             write(path, content)
 
+        layout = target / "app" / "src" / "main" / "res" / "layout" / "existing.xml"
+        write(layout, '<View xmlns:android="http://schemas.android.com/apk/res/android" '
+              'android:layout_width="match_parent" android:layout_height="wrap_content" '
+              'android:paddingLeft="8dp" />\n')
+        layout_before = layout.read_bytes()
+
         importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+        require("rtl-layout-rules.md" in read(target / "AGENTS.md"),
+                "existing root rules do not activate the RTL checkpoint")
+        require("rtl-layout-rules.md" in read(target / "app" / "AGENTS.md"),
+                "existing module rules do not activate the RTL checkpoint")
+        require(layout.read_bytes() == layout_before, "rules import unexpectedly rewrote app layout code")
         entrypoint_paths = list(seeded)
         for path, original in seeded.items():
             merged = read(path)
@@ -486,6 +518,7 @@ def validate_existing_entrypoint_merge() -> None:
         importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
         after = {path: read(path) for path in entrypoint_paths}
         require(before == after, "existing entrypoint merge is not idempotent")
+        require(layout.read_bytes() == layout_before, "repeat import unexpectedly rewrote app layout code")
 
 
 def validate_global_rule_sync() -> None:

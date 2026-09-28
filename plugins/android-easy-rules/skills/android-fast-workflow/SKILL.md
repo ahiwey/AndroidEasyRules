@@ -30,6 +30,10 @@ Own routing, scope and verification selection. Lanhu owns design interpretation 
 
 Do not install missing skills automatically. Without Lanhu, use project screenshot/resource/chart rules. General UI/UX review is for a whole redesign or requested experience review.
 
+## Default RTL Checkpoint
+
+Every new or modified Android layout must adapt to Arabic RTL without an extra user request, including Quick spacing fixes, XML/style, dynamic code and custom drawing. Read the project `AGENTS/rtl-layout-rules.md`; when absent, use the [bundled RTL contract](../android-easy-rules/assets/rules-pack/rtl-layout-rules.md) without importing it. Inspect only changed/new files, necessary parents and affected shared call sites. Apply semantic start/end, classify physical-coordinate exceptions, keep continuous timelines locally LTR and calendar/navigation RTL unless the product explicitly differs. Finish the scoped static check before delivery; visual/device/dependency authorization remains governed by Verification Selection.
+
 ## Implementation Checkpoint
 
 Reuse shared components against one confirmed contract: canonical implementation, specification source, callbacks/state keys and real call sites. Check existing/concurrent changes before proposing dimensions. A new page consumes the contract; a scoped common change updates it once. Conflicting product chapters or active changes require a decision on that conflict only; file timestamps are not approval.

@@ -1,5 +1,7 @@
 # Custom View / Chart Rules
 
+- 新增/修改自绘布局必须按 `AGENTS/rtl-layout-rules.md` 同步核对绘制、触摸坐标与手势；日历随 RTL，连续时间轴默认局部 LTR，项目明确约定优先。
+
 ## 适用范围
 
 - Canvas 自定义 View

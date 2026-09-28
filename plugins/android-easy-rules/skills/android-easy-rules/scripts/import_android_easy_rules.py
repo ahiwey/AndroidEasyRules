@@ -17,6 +17,7 @@ RULE_FILES = [
     "karpathy-guidelines.md",
     "commit-migration-rules.md",
     "screenshot-ui-rules.md",
+    "rtl-layout-rules.md",
     "image-resource-rules.md",
     "custom-view-chart-rules.md",
     "testing-build-rules.md",
@@ -547,6 +548,7 @@ def generated_agents_section() -> str:
     return """## AndroidEasyRules 导入补充
 
 - `AGENTS.md` 是唯一完整项目规则源；Codex、Kimi Code、Qoder 和未配置 `CODEBUDDY.md` 的 CodeBuddy 直接读取它。
+- 每次新增或修改 Android 布局代码，必须默认适配阿拉伯语 RTL，无需用户另行提醒；按 `AGENTS/rtl-layout-rules.md` 检查本次 XML/style、动态布局与自绘及必要调用方。完成范围内静态检查并说明物理方向例外；时间轴默认局部 LTR，导航/日历随 RTL，保留业务语义。此默认不扩大视觉测试、设备或依赖授权。
 - Claude Code、Gemini CLI 和 GitHub Copilot 使用薄入口读取 `AGENTS.md`，不得复制完整规则；目标项目已有 `CODEBUDDY.md` 时，只在其中合并指向 `AGENTS.md` 的标记段。
 - 默认先对新任务做轻量提示词增强，把原始表述整理为目标、范围、约束、关键假设和可验证成功标准；只展示影响理解、决策或验收的摘要。
 - 非琐碎且会产生代码、文件、配置或外部写入的任务默认采用两阶段交付：先完成最小查证、必要采访并给出方案，等待用户明确确认后再实施；简单事实、纯只读分析、明确 Quick 小改及用户要求“直接做”或“无需方案”时可跳过方案门。

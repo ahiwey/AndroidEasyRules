@@ -2,6 +2,10 @@
 
 这是一套可导入到其他 Android 项目的 Codex/AI Agent 规则模板。
 
+## 默认 RTL 布局适配
+
+新增或修改 Android 布局代码时，根/模块规则与 android-fast-workflow 默认触发 [RTL 专项规则](rtl-layout-rules.md)，覆盖动态布局、自绘、方向图标和混排文本；先做改动范围内静态检查，再按授权验证。导入器会为新旧项目加入入口并复制专项规则，保持重复导入幂等。此能力由智能体执行规则落实，不是 IDE 保存监听器、Git hook 或强制 CI 门禁，不保证规则外工具写入自动被纠正。
+
 ## 对外使用方式
 
 如果要在当前 Android 项目里拉取 GitHub 最新版规则，直接对 Codex 说：

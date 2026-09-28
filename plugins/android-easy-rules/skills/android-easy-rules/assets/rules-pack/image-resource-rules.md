@@ -1,5 +1,7 @@
 # Android Image / Icon Resource Rules
 
+- 布局相关图标修改同时遵循 `AGENTS/rtl-layout-rules.md`：依据实际图形判断方向性，核对真实引用与动态替换，避免遗漏镜像或双重镜像。
+
 ## 资源放置
 
 - 新增图片前先查同类资源所在目录。
