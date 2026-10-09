@@ -148,7 +148,7 @@ def validate_static_pack() -> None:
     import_rules = read(PACK_DIR / "IMPORT.md")
     readme = read(PACK_DIR / "README.md")
     rules_version = read(PACK_DIR / "VERSION").strip()
-    require(rules_version == "0.6.0", "rules-pack VERSION is not 0.6.0")
+    require(rules_version == "0.6.1", "rules-pack VERSION is not 0.6.1")
     require(importer.read_rules_version(PACK_DIR) == rules_version, "importer VERSION parsing failed")
     require(
         (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
@@ -281,7 +281,7 @@ def validate_static_pack() -> None:
 
     plugin = json.loads(read(SKILL_DIR.parent.parent / ".codex-plugin" / "plugin.json"))
     require(plugin["name"] == "android-easy-rules", "plugin name is inconsistent")
-    require(plugin["version"].startswith("0.6."), "plugin version was not bumped for prompt enhancement")
+    require(plugin["version"].startswith("0.6.1+codex."), "plugin version was not bumped to 0.6.1")
     require("./skills/" in plugin["skills"], "plugin skills path is missing")
     require(plugin["interface"]["defaultPrompt"], "plugin default prompt is empty")
     require("常见Prompt" in plugin["interface"]["defaultPrompt"], "plugin menu entry is missing")
@@ -414,7 +414,7 @@ def validate_fixture_import() -> None:
             require(topic in root_agents, f"capability route missing: {topic}")
         require("ble-core/AGENTS.md" in memory, "BLE module route missing")
         require("reasoning-playbooks.md" not in root_agents, "reasoning route was imported into root rules")
-        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.6.0 -->"
+        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.6.1 -->"
         require(root_agents.count(version_marker) == 1, "root rules version marker is invalid")
         require(app_agents.count(version_marker) == 1, "app rules version marker is invalid")
         require(
@@ -475,7 +475,7 @@ def validate_legacy_marker_upgrade() -> None:
         require("Keep this project-specific rule." in merged, "legacy user rules were lost")
         require("Old imported rules" not in merged, "legacy marked rules were not replaced")
         require(
-            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.0 -->") == 1,
+            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.1 -->") == 1,
             "legacy project did not receive one current version marker",
         )
 
@@ -556,14 +556,14 @@ def validate_global_rule_sync() -> None:
                 require(merged.startswith(heading), f"new global rule heading is invalid: {host}")
             require(merged.count(importer.MARKER_START) == 1, f"global marker count is invalid: {path}")
             require(
-                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.0 -->") == 1,
+                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.1 -->") == 1,
                 f"global version marker is invalid: {path}",
             )
             require("推理与决策方法路由" not in merged, f"reasoning route leaked into: {path}")
 
         checker_home = user_home / ".android-easy-rules"
         require((checker_home / "check_version.py").is_file(), "global sync did not install checker")
-        require(read(checker_home / "VERSION").strip() == "0.6.0", "global VERSION is invalid")
+        require(read(checker_home / "VERSION").strip() == "0.6.1", "global VERSION is invalid")
 
         before = snapshot_tree(user_home)
         importer.sync_global_rules(
@@ -762,7 +762,7 @@ def health_report() -> tuple[int, str]:
             "reasoning-playbooks.md" not in importer.generated_agents_section(),
             "隐藏天赋探索" in read(PACK_DIR / "reasoning-playbooks.md"),
             set(importer.GLOBAL_HOSTS) == {"codex", "claude", "workbuddy"},
-            read(PACK_DIR / "VERSION").strip() == "0.6.0",
+            read(PACK_DIR / "VERSION").strip() == "0.6.1",
             (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
             "AndroidEasyRules 版本提醒" in read(PACK_DIR / "global-AGENTS.md"),
             "@./AGENTS.md" in importer.gemini_entry(),
