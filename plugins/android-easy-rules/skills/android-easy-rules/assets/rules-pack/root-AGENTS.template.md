@@ -67,7 +67,7 @@
 - `gpt-5.5` 任务需要 Superpowers 但技能不可用时，只说明一次并按本项目规则继续，不搜索或安装插件，也不声称已经使用。
 - 不自动安装或调用 `grill-me`；探索后仍有产品决策时，只询问 1–3 个会改变实现的关键问题。
 - 任务速度、截图识别、编译验证收敛类任务优先使用 `android-fast-workflow` 技能；该技能只负责路由、预算和验证选择，不替代项目真实规则。
-- 可用专项技能要精准触发：commit/分支迁移用 `$commit-migration`，R8/keep 规则用 `$r8-analyzer`，整体重设计或移动端体验评审按需用 `ui-ux-pro-max`，自定义 View/图表按 `AGENTS/custom-view-chart-rules.md`；当前会话未暴露某工具或技能时，不声称已使用。
+- 可用专项技能要精准触发：commit/分支迁移用 `$commit-migration`，R8/keep 规则按 `AGENTS/r8-proguard-rules.md`，优先用可用的 `$android-r8-release-audit`，整体重设计或移动端体验评审按需用 `ui-ux-pro-max`，自定义 View/图表按 `AGENTS/custom-view-chart-rules.md`；当前会话未暴露某工具或技能时，不声称已使用。
 
 ## 会话启动流程
 
@@ -191,7 +191,7 @@
 - 多语言文案、批量 `strings.xml` 同步：参考 `AGENTS/multilang-string-rules.md`。
 - 权限、通知、后台任务、WebView/JSBridge、Health Connect、Firebase、地图、签名发布、manifest 合并：参考 `AGENTS/android-platform-integration-rules.md`。
 - 洁癖、知识收尾、规则同步、文档同步、workspace 残留审计：参考 `AGENTS/neat-freak-rules.md`。
-- 混淆、ProGuard、R8、missing class、keep 规则：参考 `AGENTS/r8-proguard-rules.md`，并使用 `$r8-analyzer` 技能。
+- 混淆、ProGuard、R8、missing class、keep 规则：参考 `AGENTS/r8-proguard-rules.md`；优先使用可用的 `$android-r8-release-audit`，缺失时按专项规则执行，不自动安装；`$r8-analyzer` 仅作可选辅助。
 - 测试与构建验证：参考 `AGENTS/testing-build-rules.md`。
 
 ## 修改边界

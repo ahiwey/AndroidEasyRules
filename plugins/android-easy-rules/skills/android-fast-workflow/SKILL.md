@@ -25,7 +25,7 @@ Own routing, scope and verification selection. Lanhu owns design interpretation 
 | Images/icons/shared resources | `AGENTS/image-resource-rules.md` |
 | Canvas/charts | `AGENTS/custom-view-chart-rules.md` |
 | Commit/branch migration | `commit-migration` and project migration rules |
-| R8/minify | `r8-analyzer` and project R8 rules |
+| R8/minify | Project R8 rules; available `android-r8-release-audit`, with `r8-analyzer` only as optional analysis support |
 | Build, device, stateful bug or interrupted verification | [Verification](references/verification.md) and relevant project testing rules |
 
 Do not install missing skills automatically. Without Lanhu, use project screenshot/resource/chart rules. General UI/UX review is for a whole redesign or requested experience review.
