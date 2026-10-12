@@ -111,7 +111,7 @@ WorkBuddy/CodeBuddy 兼容约定参考官方[规则文档](https://www.workbuddy
 | `custom-view-chart-rules.md` | Canvas 自定义 View 和健康图表类规则 |
 | `testing-build-rules.md` | Android 测试与构建验证规则 |
 | `recording-sdk-rules.md` | 录音导入、Wi-Fi 传输、跨 SDK/Sample/AAR 覆盖规则 |
-| `multilang-string-rules.md` | 多语言 `strings.xml` 批量同步、品牌词替换和验证规则 |
+| `multilang-string-rules.md` | 多语言 `strings.xml` 存放约定、既有分散字符串告知、批量同步、品牌词替换和验证规则 |
 | `android-platform-integration-rules.md` | 权限、通知、后台、WebView/JSBridge、Health Connect、Firebase、地图、签名发布和 manifest 合并规则 |
 | `neat-freak-rules.md` | 洁癖/知识收尾规则，融合自 `KKKKhazix/khazix-skills/neat-freak`，用于文档、规则、记忆和工作区残留审计 |
 | `r8-proguard-rules.md` | R8/ProGuard/missing class/keep 规则分析与修改边界 |

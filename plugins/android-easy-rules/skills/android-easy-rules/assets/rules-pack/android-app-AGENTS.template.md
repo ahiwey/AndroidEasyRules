@@ -20,7 +20,7 @@
 
 ## 资源规则
 
-- 新增或修改用户可见文本必须写入 `strings.xml`，代码和 XML 中不要硬编码展示文案。
+- 默认所有语言的 `values`、`values-*` 目录中，字符串资源只能放在各目录的 `strings.xml`，新增字符串一律写入该文件；发现其他 XML 中已有字符串时，告知用户文件路径和资源 key，不擅自迁移或重命名，按 `AGENTS/multilang-string-rules.md` 检查。代码和 XML 中不要硬编码展示文案。
 - 新增或修改默认 `values/strings.xml` 的字符串时，必须检查所有 `values-*` 目录；如果已有同名 key，必须同步更新对应翻译。确实无法可靠翻译时，保留合理兜底文案并在最终回复中逐项说明未同步原因。
 - 修改 `dimens.xml`、布局尺寸或屏幕适配时，注意 `values-sw*dp` 和屏幕适配配置。
 - 不要删除看似未引用的资源，资源可能由 XML、反射、皮肤、第三方库或动态逻辑使用。
@@ -39,7 +39,7 @@
 - 不要直接复制其他分支整套页面、随机命名 layout、品牌资源、签名文件、`google-services.json`、隐私协议、包名、无关 assets 或生成资源。
 - 迁移 Activity/Fragment/ViewModel/Repository 时，同步检查 DI 注册、manifest 声明、intent extra、EventBus 事件、route key、Repository/API 依赖和权限。
 - 迁移 layout 时，同步检查 Kotlin/Java 中的 ViewBinding id、adapter item、include/merge、custom View 全限定名、drawable、strings、多语言、dimens 和 style 依赖。
-- 迁移 values 资源时，同时检查 `strings.xml`、`colors.xml`、`dimens.xml`、`attrs.xml`、`styles.xml` 和多语言 `values-*` 是否需要同步。
+- 迁移 values 资源时，同时检查 `strings.xml`、`colors.xml`、`dimens.xml`、`attrs.xml`、`styles.xml` 和多语言 `values-*` 是否需要同步；其他 XML 中已有字符串时告知用户，不擅自迁移。
 
 ## 业务风险点
 
