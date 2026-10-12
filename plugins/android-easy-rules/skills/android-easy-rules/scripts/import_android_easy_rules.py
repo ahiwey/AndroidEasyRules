@@ -548,6 +548,7 @@ def generated_agents_section() -> str:
     return """## AndroidEasyRules 导入补充
 
 - `AGENTS.md` 是唯一完整项目规则源；Codex、Kimi Code、Qoder 和未配置 `CODEBUDDY.md` 的 CodeBuddy 直接读取它。
+- 如果当前模块存在可正常解析、可用的 `dimens.xml`，新增字体大小（`sp`）和尺寸（`dp`）应以该文件的资源与命名约定为准：优先复用单位、用途和语义匹配的已有资源；缺少对应值或合适资源时，先列出拟新增的键名、数值、单位和用途，集中询问用户是否新增这些键值；获得明确确认后才按现有约定补入 `dimens.xml` 并引用，未确认前不擅自新增键值或用硬编码替代，不在 XML/style 或动态布局代码中新增硬编码值。涉及 `values-sw*dp` 等适配目录时，遵循已有尺寸覆盖约定；不顺手迁移既有硬编码或创建新的适配体系。
 - 默认所有语言的 `res/values/`、`res/values-*` 目录中，字符串资源只能放在各目录的 `strings.xml`，新增字符串一律写入该文件；发现其他 XML 中已有字符串资源时，告知用户文件路径和资源 key，不擅自迁移或重命名。专项检查见 `AGENTS/multilang-string-rules.md`。
 - 每次新增或修改 Android 布局代码，必须默认适配阿拉伯语 RTL，无需用户另行提醒；按 `AGENTS/rtl-layout-rules.md` 检查本次 XML/style、动态布局与自绘及必要调用方。完成范围内静态检查并说明物理方向例外；时间轴默认局部 LTR，导航/日历随 RTL，保留业务语义。此默认不扩大视觉测试、设备或依赖授权。
 - Claude Code、Gemini CLI 和 GitHub Copilot 使用薄入口读取 `AGENTS.md`，不得复制完整规则；目标项目已有 `CODEBUDDY.md` 时，只在其中合并指向 `AGENTS.md` 的标记段。
