@@ -89,6 +89,14 @@ def validate_static_pack() -> None:
     require(fast_keys == ["name", "description"], "android-fast-workflow frontmatter must only contain name and description")
     for token in ("screenshot recognition", "compile/build speed", "MEMORY.md name mismatch"):
         require(token in fast_workflow, f"android-fast-workflow trigger is missing: {token}")
+    fast_dir = PLUGIN_SKILLS_DIR / "android-fast-workflow"
+    for document in [fast_dir / "SKILL.md", *sorted((fast_dir / "references").glob("*.md"))]:
+        for target in re.findall(r"(?<!!)\[[^\]]+\]\(([^)]+)\)", read(document)):
+            if re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*:", target):
+                continue
+            local_path = target.split("#", 1)[0]
+            require((document.parent / local_path).is_file(),
+                    f"{document.name}: missing local reference: {target}")
     require(karpathy_skill.startswith("---\n"), "karpathy-guidelines is missing YAML frontmatter")
     karpathy_frontmatter = karpathy_skill.split("---\n", 2)[1]
     karpathy_keys = [
@@ -281,7 +289,7 @@ def validate_static_pack() -> None:
 
     plugin = json.loads(read(SKILL_DIR.parent.parent / ".codex-plugin" / "plugin.json"))
     require(plugin["name"] == "android-easy-rules", "plugin name is inconsistent")
-    require(plugin["version"].startswith("0.6.3+codex."), "plugin version was not bumped to 0.6.3")
+    require(plugin["version"].startswith("0.6.4+codex."), "plugin version was not bumped to 0.6.4")
     require("./skills/" in plugin["skills"], "plugin skills path is missing")
     require(plugin["interface"]["defaultPrompt"], "plugin default prompt is empty")
     require("常见Prompt" in plugin["interface"]["defaultPrompt"], "plugin menu entry is missing")
