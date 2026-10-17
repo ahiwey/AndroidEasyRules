@@ -728,10 +728,19 @@ def copy_module_rules(
         src = rules_pack / "android-app-AGENTS.template.md"
         dst = module_dir(target, app_module) / "AGENTS.md"
         if src.exists():
+            template = fill_template(read_text(src), values)
+            app_section = generated_app_section(values)
+            # Keep upgradeable business checks in the managed block only.
+            heading = "## 数据与交互一致性\n"
+            prefix, found, suffix = template.partition(heading)
+            if found:
+                business, next_heading, remaining = suffix.partition("\n## ")
+                app_section += "\n\n" + heading + business.rstrip()
+                template = prefix.rstrip() + ("\n\n## " + remaining if next_heading else "\n")
             merge_marked_file(
                 dst,
-                fill_template(read_text(src), values),
-                versioned_section(generated_app_section(values), rules_version),
+                template,
+                versioned_section(app_section, rules_version),
                 dry_run,
             )
 
