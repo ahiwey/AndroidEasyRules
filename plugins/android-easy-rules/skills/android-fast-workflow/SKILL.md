@@ -44,7 +44,7 @@ Check only affected data labels/fields/units/ranges, chart semantics, locales an
 
 For UI/layout/interaction work, implement, complete minimal static checks and fix findings; then ask once for Paparazzi, device/emulator or static only, unless selected in this scope. Data-only and rules-only work does not need a screenshot-choice prompt. Before selection, do not run screenshots or probe/use devices. Paparazzi does not authorize ADB or dependencies. Existing values usually need static checks; new resources may need one resource task; type boundaries one compile/test; an APK or uncovered integration boundary may need assemble. Details and shared-session contention handling are in [Verification](references/verification.md).
 
-Report static, component visual and real-host/runtime evidence separately. Old screenshots, tests or installed APKs do not validate changed source; format health is not App quality.
+Report static, component visual and real-host/runtime evidence separately. Old screenshots, tests or installed APKs do not validate changed source; format health is not App quality. For multilingual size/centering reviews, use the focused locale/layout section in [Verification](references/verification.md#focused-localelayout-evidence); representative configurations and temporary test entrypoints have explicit coverage limits.
 
 ## Index and Resume
 
