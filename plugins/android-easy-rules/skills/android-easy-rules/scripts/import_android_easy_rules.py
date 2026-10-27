@@ -68,6 +68,24 @@ def write_text(path: Path, text: str, dry_run: bool) -> None:
     print(f"[write] {path}")
 
 
+def ensure_verification_gitignore(target: Path, dry_run: bool) -> None:
+    path = target / ".gitignore"
+    original = path.read_bytes() if path.exists() else b""
+    patterns = [line.strip() for line in original.decode("utf-8-sig").splitlines()
+                if line.strip() and not line.lstrip().startswith("#")]
+    matching = [index for index, line in enumerate(patterns) if line == "/testdocs/"]
+    if matching and not any(line.startswith("!") for line in patterns[matching[-1] + 1:]):
+        return
+    if dry_run:
+        print(f"[dry-run] append /testdocs/ to {path}")
+        return
+    newline = b"\r\n" if b"\r\n" in original else b"\n"
+    separator = b"" if not original or original.endswith(b"\n") else newline
+    addition = newline.join((b"# AndroidEasyRules: local verification artifacts", b"/testdocs/", b""))
+    path.write_bytes(original + separator + addition)
+    print(f"[write] append /testdocs/ to {path}")
+
+
 def merge_marked_file(path: Path, generated: str, section: str, dry_run: bool) -> None:
     if not path.exists():
         marked = f"{MARKER_START}\n{section.rstrip()}\n{MARKER_END}"
@@ -559,6 +577,9 @@ def generated_agents_section() -> str:
 - 用户确认方案后，把已确认方案视为实施边界；除非代码已变化、验证失败或出现新证据，不重复完整排查或询问已确认事项。
 - 完成已确认的多步骤方案时，最终回复按原方案编号逐项标注“已完成/延期”、对应修改位置和验证结果；实施中范围变化时只说明增量与影响，避免用户重新核对是否漏项。
 - 新建文件或产物时，如果用户未指定目录且当前上下文没有明确的既存目标目录，写入前先询问保存位置；不得默认写入 AI 缓存、临时目录或默认输出目录。已指定目录或修改现有目录时不重复询问。
+- 验证过程产生的报告、截图、录屏、日志、临时脚本与测试数据，默认保存到当前项目根目录 `testdocs/<YYYY-MM-DD-任务>/`；此约定已明确保存位置，无需再次询问，用户明确指定其他位置时优先遵从。
+- 根 `.gitignore` 使用 `/testdocs/` 忽略本地验证产物；首次产生材料时再创建目录，不生成占位文件。`docs/` 保留正式设计、协议和接入说明等长期文档；测试源码及需要版本管理的截图基准仍放在现有测试目录。
+- 此约定只约束今后生成的验证产物；不自动迁移、删除或取消跟踪历史 `docs/` 内容，不修改已有暂存状态。发现历史材料时先说明，另获明确授权后再整理。
 - 每次实质交付后，在最终回复正文询问结果是否满足需求，并说明可以继续迭代；纯闲聊和简短事实回答除外。不得为此使用终端弹框或选项工具。
 - 多文件修改、外部调研、构建测试、长文档或多轮工具操作等明显耗时或耗 Token 的任务完成后，在最终回复正文提示可以继续优化或沉淀为 Skill；只提示，不自动创建 Skill，也不得为此使用终端弹框或选项工具。
 - 用户明确要求创建或更新 Skill 时，默认生成到可写的 `AndroidSampleSkill/skills/<skill-name>/`；找不到仓库时先询问路径。完成验证后说明是否已提交和发布，未提交时提醒提交。
@@ -883,6 +904,7 @@ def import_rules(
     memory_template = fill_template(read_text(rules_pack / "MEMORY.template.md"), values)
     validate_generated_texts(rules_pack, values, root_template, memory_template, strict=strict)
 
+    ensure_verification_gitignore(target, dry_run)
     merge_marked_file(
         target / "AGENTS.md",
         root_template,

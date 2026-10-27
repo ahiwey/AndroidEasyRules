@@ -103,3 +103,10 @@ python scripts/import_android_easy_rules.py <target-project-root> --dry-run --st
 ```
 
 The validator must report `health_grade=A+` or higher before exporting or publishing the rules pack. This is pack structure/import integrity only, not Skill behavior or App visual quality. Workflow/tool changes also need observable case replay and relevant tool tests; report unverified behavior separately rather than assigning a quality score from keywords.
+
+## Local verification artifacts
+
+- Project imports preserve existing `.gitignore` bytes and append the root-only `/testdocs/` ignore when needed. Dry runs do not write, and repeated imports are idempotent.
+- Save new verification reports, screenshots, recordings, logs, temporary scripts and fixtures under `testdocs/<YYYY-MM-DD-task>/`; create it only when needed. This convention supplies the default destination without another location question.
+- Keep durable documentation in `docs/` and versioned tests or screenshot baselines in their existing test directories. Do not migrate historical documentation, untrack files, or alter the Git index without separate authorization.
+- Verify both the imported policy and actual Git ignore behavior; adding an ignore does not hide already tracked or staged files.

@@ -156,7 +156,7 @@ def validate_static_pack() -> None:
     import_rules = read(PACK_DIR / "IMPORT.md")
     readme = read(PACK_DIR / "README.md")
     rules_version = read(PACK_DIR / "VERSION").strip()
-    require(rules_version == "0.6.5", "rules-pack VERSION is not 0.6.5")
+    require(rules_version == "0.6.6", "rules-pack VERSION is not 0.6.6")
     require(importer.read_rules_version(PACK_DIR) == rules_version, "importer VERSION parsing failed")
     require(
         (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
@@ -381,6 +381,50 @@ android {
     )
 
 
+def validate_verification_artifacts() -> None:
+    for name in ("global-AGENTS.md", "root-AGENTS.template.md", "testing-build-rules.md"):
+        text = read(PACK_DIR / name)
+        for token in ("testdocs/<YYYY-MM-DD-任务>/", "/testdocs/", "无需再次询问", "截图基准", "不修改已有暂存状态"):
+            require(token in text, f"{name}: verification artifact policy missing: {token}")
+    require("testdocs/" in read(PACK_DIR / "screenshot-ui-rules.md"), "screenshot artifacts have no destination")
+    require("testdocs/" in importer.generated_agents_section(), "existing projects miss the artifact policy")
+    cases = (
+        None,
+        b"",
+        b"# Existing ignores\n/build/",
+        b"# Existing ignores\r\n/build/\r\n",
+        b"\xef\xbb\xbf# Existing ignores\r\n/build/\r\n",
+        b"/testdocs/\n",
+        b"# /testdocs/\n!keep.txt\n",
+        b"/testdocs/\n!/testdocs/\n!/testdocs/keep.txt\n",
+    )
+    for original in cases:
+        with TemporaryDirectory(prefix="android-easy-rules-artifacts-") as temp:
+            target = Path(temp)
+            path = target / ".gitignore"
+            write(target / "docs" / "existing.md", "Keep historical documentation.\n")
+            if original is not None:
+                path.write_bytes(original)
+            before = snapshot_tree(target)
+            importer.ensure_verification_gitignore(target, dry_run=True)
+            require(snapshot_tree(target) == before, "ignore dry-run changed existing files")
+            importer.ensure_verification_gitignore(target, dry_run=False)
+            merged = path.read_bytes()
+            require(merged.startswith(original or b""), "existing ignore bytes were changed")
+            require("/testdocs/" in merged.decode("utf-8-sig").splitlines(), "root verification ignore missing")
+            if original == b"/testdocs/\n":
+                require(merged == original, "existing root ignore was duplicated")
+            if original and b"\r\n" in original:
+                require(b"\n" not in merged.replace(b"\r\n", b""), "ignore newline style changed")
+            once = snapshot_tree(target)
+            importer.ensure_verification_gitignore(target, dry_run=False)
+            require(snapshot_tree(target) == once, "ignore merge is not idempotent")
+            require(read(target / "docs" / "existing.md") == "Keep historical documentation.\n",
+                    "historical documentation was modified")
+            require(not (target / "testdocs").exists(), "import created an unused artifact directory")
+    print("Verification artifacts: destination, preservation, dry-run and ignore idempotence passed")
+
+
 def validate_fixture_import() -> None:
     with TemporaryDirectory(prefix="android-easy-rules-") as temp:
         target = Path(temp)
@@ -404,6 +448,7 @@ def validate_fixture_import() -> None:
             user_home=user_home,
         )
         require(not user_home.exists(), "ordinary project import wrote user-level files")
+        require("/testdocs/" in read(target / ".gitignore").splitlines(), "project ignore was not imported")
 
         root_agents = read(target / "AGENTS.md")
         memory = read(target / "MEMORY.md")
@@ -428,7 +473,7 @@ def validate_fixture_import() -> None:
             require(topic in root_agents, f"capability route missing: {topic}")
         require("ble-core/AGENTS.md" in memory, "BLE module route missing")
         require("reasoning-playbooks.md" not in root_agents, "reasoning route was imported into root rules")
-        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.6.5 -->"
+        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.6.6 -->"
         require(root_agents.count(version_marker) == 1, "root rules version marker is invalid")
         require(app_agents.count(version_marker) == 1, "app rules version marker is invalid")
         require(
@@ -447,6 +492,7 @@ def validate_fixture_import() -> None:
             target / "GEMINI.md",
             target / ".github" / "copilot-instructions.md",
             target / "MEMORY.md",
+            target / ".gitignore",
         ]
         require(not (target / "CODEBUDDY.md").exists(), "CODEBUDDY.md should not be created when absent")
         require(read(target / "GEMINI.md").count("@./AGENTS.md") == 1, "Gemini entrypoint is not thin")
@@ -495,7 +541,7 @@ def validate_legacy_marker_upgrade() -> None:
         require("Keep this project-specific rule." in merged, "legacy user rules were lost")
         require("Old imported rules" not in merged, "legacy marked rules were not replaced")
         require(
-            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.5 -->") == 1,
+            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.6 -->") == 1,
             "legacy project did not receive one current version marker",
         )
         app_agents = read(target / "app" / "AGENTS.md")
@@ -503,7 +549,7 @@ def validate_legacy_marker_upgrade() -> None:
         require("Keep app-specific notes." in app_agents, "legacy app user notes were lost")
         require("Old app rules" not in app_agents, "legacy app managed rules were not replaced")
         require("ANDROID_EASY_RULES_VERSION: 0.6.3" not in app_agents, "legacy app version marker remains")
-        require(app_agents.count("ANDROID_EASY_RULES_VERSION: 0.6.5") == 1, "legacy app version marker is invalid")
+        require(app_agents.count("ANDROID_EASY_RULES_VERSION: 0.6.6") == 1, "legacy app version marker is invalid")
         require(business_rules in app_agents, "legacy app did not receive new business checks")
         require(app_agents.count("## 数据与交互一致性") == 1, "legacy app business checks were duplicated")
         before = snapshot_tree(target)
@@ -593,14 +639,14 @@ def validate_global_rule_sync() -> None:
                 require(merged.startswith(heading), f"new global rule heading is invalid: {host}")
             require(merged.count(importer.MARKER_START) == 1, f"global marker count is invalid: {path}")
             require(
-                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.5 -->") == 1,
+                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.6 -->") == 1,
                 f"global version marker is invalid: {path}",
             )
             require("推理与决策方法路由" not in merged, f"reasoning route leaked into: {path}")
 
         checker_home = user_home / ".android-easy-rules"
         require((checker_home / "check_version.py").is_file(), "global sync did not install checker")
-        require(read(checker_home / "VERSION").strip() == "0.6.5", "global VERSION is invalid")
+        require(read(checker_home / "VERSION").strip() == "0.6.6", "global VERSION is invalid")
 
         before = snapshot_tree(user_home)
         importer.sync_global_rules(
@@ -799,7 +845,7 @@ def health_report() -> tuple[int, str]:
             "reasoning-playbooks.md" not in importer.generated_agents_section(),
             "隐藏天赋探索" in read(PACK_DIR / "reasoning-playbooks.md"),
             set(importer.GLOBAL_HOSTS) == {"codex", "claude", "workbuddy"},
-            read(PACK_DIR / "VERSION").strip() == "0.6.5",
+            read(PACK_DIR / "VERSION").strip() == "0.6.6",
             (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
             "AndroidEasyRules 版本提醒" in read(PACK_DIR / "global-AGENTS.md"),
             "@./AGENTS.md" in importer.gemini_entry(),
@@ -820,6 +866,7 @@ def health_report() -> tuple[int, str]:
 
 def main() -> int:
     validate_static_pack()
+    validate_verification_artifacts()
     validate_fixture_import()
     validate_legacy_marker_upgrade()
     validate_existing_entrypoint_merge()

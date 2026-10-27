@@ -47,6 +47,12 @@
 - 不修改 marketplace 配置，除非用户明确要求。
 - 不覆盖用户已有改动；不使用 `git reset --hard` 或破坏性 checkout。
 
+## 验证产物归档
+
+- 验证过程产生的报告、截图、录屏、日志、临时脚本与测试数据，默认保存到当前项目根目录 `testdocs/<YYYY-MM-DD-任务>/`；此约定已明确保存位置，无需再次询问，用户明确指定其他位置时优先遵从。
+- 根 `.gitignore` 使用 `/testdocs/` 忽略本地验证产物；首次产生材料时再创建目录，不生成占位文件。`docs/` 保留正式设计、协议和接入说明等长期文档；测试源码及需要版本管理的截图基准仍放在现有测试目录。
+- 此约定只约束今后生成的验证产物；不自动迁移、删除或取消跟踪历史 `docs/` 内容，不修改已有暂存状态。发现历史材料时先说明，另获明确授权后再整理。
+
 ## 验证规则
 
 - 修改 importer 脚本后运行 `python -m py_compile plugins/android-easy-rules/skills/android-easy-rules/scripts/import_android_easy_rules.py`。
