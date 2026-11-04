@@ -25,6 +25,7 @@ Own routing, scope and verification selection. Lanhu owns design interpretation 
 | Images/icons/shared resources | `AGENTS/image-resource-rules.md` |
 | Canvas/charts | `AGENTS/custom-view-chart-rules.md` |
 | Commit/branch migration | `commit-migration` and project migration rules |
+| New/changed DTO, JSON cache, nested enum or reflection entry | Scoped serialization check in project R8 rules; available `android-r8-release-audit` local mode, not an App-wide audit |
 | R8/minify | Project R8 rules; available `android-r8-release-audit`, with `r8-analyzer` only as optional analysis support |
 | Build, device, stateful bug or interrupted verification | [Verification](references/verification.md) and relevant project testing rules |
 
@@ -36,9 +37,11 @@ Every new or modified Android layout must adapt to Arabic RTL without an extra u
 
 ## Implementation Checkpoint
 
+For every new/changed App-owned dialog, sheet or picker, first locate a matching shared implementation, its real caller and effective theme/layout resources. Reuse it by default and name the source; an unstyled platform/Material dialog is not the project default. Ask once about a different style or wider shared impact unless explicitly approved in this scope. Follow the project screenshot rules or Lanhu resource-reuse reference; preserve selection, cancel/confirm and lifecycle behavior.
+
 Reuse shared components against one confirmed contract: canonical implementation, specification source, callbacks/state keys and real call sites. Check existing/concurrent changes before proposing dimensions. A new page consumes the contract; a scoped common change updates it once. Conflicting product chapters or active changes require a decision on that conflict only; file timestamps are not approval.
 
-Check only affected data labels/fields/units/ranges, chart semantics, locales and shared behavior. For text/animation layout, cross-page data or legends, failure-state interaction, or request payloads, read only the matching [Implementation Checks](references/implementation-checks.md) section during implementation or rework; do not run a full-page audit. Respect product/design precedence; distinguish page, dialog and draft states. Missing backend support remains a declared draft/placeholder boundary. Whole-background continuity and animation follow the Lanhu visual contract; copied assets or all-zero screenshots do not prove completion.
+Check only affected data labels/fields/units/ranges, chart semantics, locales and shared behavior. For text/animation layout, cross-page data or legends, settings persistence/readback, failure-state interaction, or request payloads, read only the matching [Implementation Checks](references/implementation-checks.md) section during implementation or rework; do not run a full-page audit. Respect product/design precedence; distinguish page, dialog and draft states. Missing backend support remains a declared draft/placeholder boundary. Whole-background continuity and animation follow the Lanhu visual contract; copied assets or all-zero screenshots do not prove completion.
 
 ## Verification Selection
 

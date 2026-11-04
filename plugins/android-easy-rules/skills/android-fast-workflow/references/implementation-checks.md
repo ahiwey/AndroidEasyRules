@@ -26,8 +26,15 @@ Read only the matching section when the requested change touches that boundary. 
 - Read the real tap/drag dispatch and state guards. Preserve retry taps, loading restrictions, cancellation and RTL direction according to the confirmed contract rather than removing every guard to enable one gesture.
 - Verify the affected transition back to empty/error as well as success; check that callbacks belong to the active page/session/request. Read [Verification](verification.md) only when state ownership or the chosen verification route requires it.
 
+## Settings Save and Readback
+
+- For changed settings/switches/pickers, extend the same state matrix with draft selection, persisted value, device acknowledgement/readback and current operation identity. Verify initial fill, cancel without writing, confirmation reading the latest choice, save failure and return/re-entry refresh.
+- Follow the existing local/device commit order; do not invent success before the required step completes. Merge only affected fields rather than writing back an old whole settings object. Reject stale results using the actual session/device/request or revision contract; do not arbitrarily discard legitimate device updates.
+- Use focused existing logic tests when useful, including rapid change/confirm and late readback. Component fixtures do not execute persistence, navigation or BLE; report those boundaries separately.
+
 ## Payload, Units and Generated Content
 
+- New/changed DTOs, local JSON cache models, nested enums and reflection consumers trigger the project R8 rules even in ordinary implementation. Inspect the actual adapter, transitive field/generic types, stable names and effective consumer/keep; do not infer safety from an outer generated adapter or annotate every UI class. When project rules are absent, use the [bundled scoped serialization check](../../android-easy-rules/assets/rules-pack/r8-proguard-rules.md) without importing rules.
 - At a new or changed request boundary, inspect the serializer/adapter actually used with the real DTO types and existing dependencies. A rendered pending/success fixture does not execute serialization or send a request. Reuse the project's supported path rather than adding a dependency by default.
 - Normalize units, time zone, date interval and required aggregation in deterministic client code where the contract assigns that responsibility. Use explicit field semantics and avoid double conversion; do not rely on a prompt to perform contractual arithmetic or date filtering.
 - Prefer an existing focused test with nonzero/boundary input when these transformations change; verify the expected payload and preservation of source records. Do not add tests that merely repeat layout attributes.

@@ -156,7 +156,7 @@ def validate_static_pack() -> None:
     import_rules = read(PACK_DIR / "IMPORT.md")
     readme = read(PACK_DIR / "README.md")
     rules_version = read(PACK_DIR / "VERSION").strip()
-    require(rules_version == "0.6.6", "rules-pack VERSION is not 0.6.6")
+    require(rules_version == "0.6.7", "rules-pack VERSION is not 0.6.7")
     require(importer.read_rules_version(PACK_DIR) == rules_version, "importer VERSION parsing failed")
     require(
         (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
@@ -289,7 +289,7 @@ def validate_static_pack() -> None:
 
     plugin = json.loads(read(SKILL_DIR.parent.parent / ".codex-plugin" / "plugin.json"))
     require(plugin["name"] == "android-easy-rules", "plugin name is inconsistent")
-    require(plugin["version"] == "0.6.6", "plugin version was not bumped to 0.6.6")
+    require(plugin["version"] == "0.6.7", "plugin version was not bumped to 0.6.7")
     require("./skills/" in plugin["skills"], "plugin skills path is missing")
     require(plugin["interface"]["defaultPrompt"], "plugin default prompt is empty")
     require("常见Prompt" in plugin["interface"]["defaultPrompt"], "plugin menu entry is missing")
@@ -473,7 +473,7 @@ def validate_fixture_import() -> None:
             require(topic in root_agents, f"capability route missing: {topic}")
         require("ble-core/AGENTS.md" in memory, "BLE module route missing")
         require("reasoning-playbooks.md" not in root_agents, "reasoning route was imported into root rules")
-        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.6.6 -->"
+        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.6.7 -->"
         require(root_agents.count(version_marker) == 1, "root rules version marker is invalid")
         require(app_agents.count(version_marker) == 1, "app rules version marker is invalid")
         require(
@@ -541,7 +541,7 @@ def validate_legacy_marker_upgrade() -> None:
         require("Keep this project-specific rule." in merged, "legacy user rules were lost")
         require("Old imported rules" not in merged, "legacy marked rules were not replaced")
         require(
-            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.6 -->") == 1,
+            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.7 -->") == 1,
             "legacy project did not receive one current version marker",
         )
         app_agents = read(target / "app" / "AGENTS.md")
@@ -549,12 +549,66 @@ def validate_legacy_marker_upgrade() -> None:
         require("Keep app-specific notes." in app_agents, "legacy app user notes were lost")
         require("Old app rules" not in app_agents, "legacy app managed rules were not replaced")
         require("ANDROID_EASY_RULES_VERSION: 0.6.3" not in app_agents, "legacy app version marker remains")
-        require(app_agents.count("ANDROID_EASY_RULES_VERSION: 0.6.6") == 1, "legacy app version marker is invalid")
+        require(app_agents.count("ANDROID_EASY_RULES_VERSION: 0.6.7") == 1, "legacy app version marker is invalid")
         require(business_rules in app_agents, "legacy app did not receive new business checks")
         require(app_agents.count("## 数据与交互一致性") == 1, "legacy app business checks were duplicated")
         before = snapshot_tree(target)
         importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
         require(before == snapshot_tree(target), "legacy app upgrade is not idempotent")
+
+
+def validate_development_checkpoints() -> None:
+    """Exercise new/old project delivery, not the agent's judgment of Android code."""
+    heading = "## 默认组件与数据边界检查\n"
+    template = read(PACK_DIR / "root-AGENTS.template.md")
+    contract = template.split(heading, 1)[1].split("\n## ", 1)[0].strip()
+    checkpoints = [line for line in contract.splitlines() if line.startswith("- ")]
+    require(len(checkpoints) == 2, "development checkpoint contract is incomplete")
+    for filename in ("global-AGENTS.md", "android-app-AGENTS.template.md"):
+        require(contract in read(PACK_DIR / filename), f"{filename}: checkpoint contract drifted")
+    for checkpoint in checkpoints:
+        require(checkpoint in importer.generated_agents_section(),
+                "existing-project generator omits a development checkpoint")
+
+    for scenario in ("new", "existing", "upgrade-0.6.6"):
+        with TemporaryDirectory(prefix="android-easy-rules-checkpoints-") as temp:
+            target = Path(temp)
+            create_fixture(target)
+            protected = {}
+            if scenario != "new":
+                for relative in ("AGENTS.md", "app/AGENTS.md"):
+                    prefix = f"# User rules for {relative}\n\nPreserve this project contract.\n\n"
+                    suffix = "\nUser notes after managed rules must survive.\n"
+                    managed = ""
+                    if scenario.startswith("upgrade"):
+                        managed = (f"{importer.MARKER_START}\n"
+                                   "<!-- ANDROID_EASY_RULES_VERSION: 0.6.6 -->\n"
+                                   f"Old routes\n{importer.MARKER_END}\n")
+                    write(target / relative, prefix + managed + suffix)
+                    protected[relative] = (prefix.strip(), suffix.strip())
+            # Dry-run must not alter either project notes or ordinary source/configuration.
+            before = snapshot_tree(target)
+            importer.import_rules(target, PACK_DIR, dry_run=True, strict=True)
+            require(snapshot_tree(target) == before, f"{scenario}: dry-run wrote files")
+            importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+            for relative in ("AGENTS.md", "app/AGENTS.md"):
+                result = read(target / relative)
+                for checkpoint in checkpoints:
+                    require(result.count(checkpoint) == 1,
+                            f"{scenario}/{relative}: missing or duplicated checkpoint")
+                for note in protected.get(relative, ()):
+                    require(note in result, f"{scenario}/{relative}: user note was lost")
+            for name in ("screenshot-ui-rules.md", "r8-proguard-rules.md"):
+                require((target / "AGENTS" / name).read_bytes() == (PACK_DIR / name).read_bytes(),
+                        f"{scenario}: focused contract differs from source: {name}")
+            for relative, content in before.items():
+                if relative.replace("\\", "/") not in ("AGENTS.md", "app/AGENTS.md"):
+                    require((target / relative).read_bytes() == content,
+                            f"{scenario}: unrelated fixture file changed: {relative}")
+            first = snapshot_tree(target)
+            importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+            require(snapshot_tree(target) == first, f"{scenario}: checkpoint import is not idempotent")
+    print("Development checkpoints: new/existing/0.6.6 upgrade, preservation, dry-run and idempotence passed")
 
 
 def validate_existing_entrypoint_merge() -> None:
@@ -639,14 +693,14 @@ def validate_global_rule_sync() -> None:
                 require(merged.startswith(heading), f"new global rule heading is invalid: {host}")
             require(merged.count(importer.MARKER_START) == 1, f"global marker count is invalid: {path}")
             require(
-                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.6 -->") == 1,
+                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.7 -->") == 1,
                 f"global version marker is invalid: {path}",
             )
             require("推理与决策方法路由" not in merged, f"reasoning route leaked into: {path}")
 
         checker_home = user_home / ".android-easy-rules"
         require((checker_home / "check_version.py").is_file(), "global sync did not install checker")
-        require(read(checker_home / "VERSION").strip() == "0.6.6", "global VERSION is invalid")
+        require(read(checker_home / "VERSION").strip() == "0.6.7", "global VERSION is invalid")
 
         before = snapshot_tree(user_home)
         importer.sync_global_rules(
@@ -845,7 +899,7 @@ def health_report() -> tuple[int, str]:
             "reasoning-playbooks.md" not in importer.generated_agents_section(),
             "隐藏天赋探索" in read(PACK_DIR / "reasoning-playbooks.md"),
             set(importer.GLOBAL_HOSTS) == {"codex", "claude", "workbuddy"},
-            read(PACK_DIR / "VERSION").strip() == "0.6.6",
+            read(PACK_DIR / "VERSION").strip() == "0.6.7",
             (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
             "AndroidEasyRules 版本提醒" in read(PACK_DIR / "global-AGENTS.md"),
             "@./AGENTS.md" in importer.gemini_entry(),
@@ -869,6 +923,7 @@ def main() -> int:
     validate_verification_artifacts()
     validate_fixture_import()
     validate_legacy_marker_upgrade()
+    validate_development_checkpoints()
     validate_existing_entrypoint_merge()
     validate_global_rule_sync()
     validate_version_checker()

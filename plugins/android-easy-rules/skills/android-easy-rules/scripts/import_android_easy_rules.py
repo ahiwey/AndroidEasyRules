@@ -566,6 +566,8 @@ def generated_agents_section() -> str:
     return """## AndroidEasyRules 导入补充
 
 - `AGENTS.md` 是唯一完整项目规则源；Codex、Kimi Code、Qoder 和未配置 `CODEBUDDY.md` 的 CodeBuddy 直接读取它。
+- 新增或修改 App 内弹框、底部面板或选择器时，先核对同用途公共组件、实际调用方及主题/style/布局，默认复用并说明来源；不得直接以无项目样式的原生弹框交付。确需不同样式或扩大公共样式影响范围时，列出差异并集中确认；本任务已明确批准的设计直接执行。细则按 `AGENTS/screenshot-ui-rules.md`；缺失时按本约定执行，不自动导入。
+- 新增或修改接口 DTO、本地 JSON 缓存模型、嵌套类型、枚举或反射入口时，即使未要求混淆审计，也要按 `AGENTS/r8-proguard-rules.md` 做改动范围内的序列化与 Release 安全检查：确认实际 serializer/adapter、字段与枚举名称契约、类型/构造器/泛型及生效的 consumer/keep。纯 UI/普通逻辑类不机械加注解或 keep；专项缺失时仍执行此局部检查。不自动扩大为全应用审计或构建；分别报告静态、混淆产物和运行验证。
 - 如果当前模块存在可正常解析、可用的 `dimens.xml`，新增字体大小（`sp`）和尺寸（`dp`）应以该文件的资源与命名约定为准：优先复用单位、用途和语义匹配的已有资源；缺少对应值或合适资源时，先列出拟新增的键名、数值、单位和用途，集中询问用户是否新增这些键值；获得明确确认后才按现有约定补入 `dimens.xml` 并引用，未确认前不擅自新增键值或用硬编码替代，不在 XML/style 或动态布局代码中新增硬编码值。涉及 `values-sw*dp` 等适配目录时，遵循已有尺寸覆盖约定；不顺手迁移既有硬编码或创建新的适配体系。
 - 默认所有语言的 `res/values/`、`res/values-*` 目录中，字符串资源只能放在各目录的 `strings.xml`，新增字符串一律写入该文件；发现其他 XML 中已有字符串资源时，告知用户文件路径和资源 key，不擅自迁移或重命名。专项检查见 `AGENTS/multilang-string-rules.md`。
 - 每次新增或修改 Android 布局代码，必须默认适配阿拉伯语 RTL，无需用户另行提醒；按 `AGENTS/rtl-layout-rules.md` 检查本次 XML/style、动态布局与自绘及必要调用方。完成范围内静态检查并说明物理方向例外；时间轴默认局部 LTR，导航/日历随 RTL，保留业务语义。此默认不扩大视觉测试、设备或依赖授权。
@@ -737,6 +739,18 @@ def copy_rule_files(rules_pack: Path, target: Path, dry_run: bool) -> None:
             print(f"[copy] {dst}")
 
 
+def strip_template_development_checkpoints(template: str) -> str:
+    """Keep these upgradeable defaults only in the generated managed block.
+
+    This operates on a source template, never on user-authored project content.
+    """
+    prefix, found, suffix = template.partition("## 默认组件与数据边界检查\n")
+    if not found:
+        return template
+    _, next_heading, remaining = suffix.partition("\n## ")
+    return prefix.rstrip() + ("\n\n## " + remaining if next_heading else "\n")
+
+
 def copy_module_rules(
     rules_pack: Path,
     target: Path,
@@ -749,7 +763,7 @@ def copy_module_rules(
         src = rules_pack / "android-app-AGENTS.template.md"
         dst = module_dir(target, app_module) / "AGENTS.md"
         if src.exists():
-            template = fill_template(read_text(src), values)
+            template = strip_template_development_checkpoints(fill_template(read_text(src), values))
             app_section = generated_app_section(values)
             # Keep upgradeable business checks in the managed block only.
             heading = "## 数据与交互一致性\n"
@@ -900,7 +914,9 @@ def import_rules(
     app_module = detect_app_module(target, modules)
     values = detect_android_values(target, app_module)
 
-    root_template = fill_template(read_text(rules_pack / "root-AGENTS.template.md"), values)
+    root_template = strip_template_development_checkpoints(
+        fill_template(read_text(rules_pack / "root-AGENTS.template.md"), values)
+    )
     memory_template = fill_template(read_text(rules_pack / "MEMORY.template.md"), values)
     validate_generated_texts(rules_pack, values, root_template, memory_template, strict=strict)
 
