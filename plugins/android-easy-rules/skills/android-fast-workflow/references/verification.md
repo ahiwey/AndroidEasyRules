@@ -1,11 +1,15 @@
 # Verification and Stateful Work
 
-Load only for builds, screenshots/device verification, interrupted work or stateful bugs. Project constraints and current authorization remain authoritative.
+Load for XLog requests, builds, screenshots/device verification, interrupted work, or stateful bugs. Project constraints and current authorization remain authoritative.
+
+## XLog Device Verification
+
+Follow the XLog section in project `AGENTS/testing-build-rules.md`. When project rules lack the XLog section, use the [bundled testing rules](../../android-easy-rules/assets/rules-pack/testing-build-rules.md). Apply the visual verification choice below when the task also requires visual evidence.
 
 ## Verification Order
 
 For UI/layout/interaction work, complete implementation and minimal static checks, fix findings, then ask once whether to add Paparazzi, device/emulator screenshots, or skip visual verification. Reuse an existing in-scope choice; do not ask at proposal/intake by default.
-Before a choice, do not run Paparazzi or probe/use devices. Paparazzi does not authorize ADB or dependencies; check existing setup and confirm integration cost if missing. Only the device route permits scoped device actions.
+Before a visual verification choice, do not run Paparazzi or probe/use devices for visual checks. Paparazzi does not authorize ADB or dependencies; check existing setup and confirm integration cost if missing. For device actions, use the authorization from the selected visual device route or the automatic XLog route within its scope.
 Follow project rules for minimal resource/compile/unit checks; report static, visual and runtime evidence separately. Apply the screenshot-choice prompt to UI/layout/interaction work that still has an undecided visual route; do not attach it to a data-only or rules-only fix. An explicit static-only choice closes that decision for this scope. These boundaries also apply without project rules.
 Separate component snapshots, pure state/storage tests and real host/navigation evidence; defer deterministic fixtures and screenshot-host limits to Lanhu verification guidance. Pending-state fixtures do not exercise requests. At changed request boundaries, distinguish serializer/payload checks, transport success and content correctness using the matching [Implementation Checks](implementation-checks.md#payload-units-and-generated-content); a mocked answer or in-memory store does not validate the real request or disk persistence.
 After interruption, reuse in-scope authorization and still-current artifacts; resume the first incomplete build/install/launch/scenario stage. Read final reports once rather than repeatedly polling log tails. Another task's device authorization does not transfer.

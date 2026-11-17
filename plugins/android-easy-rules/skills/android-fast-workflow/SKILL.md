@@ -1,6 +1,6 @@
 ---
 name: android-fast-workflow
-description: Route Android screenshot recognition, implementation and focused fixes, including compile/build speed and MEMORY.md name mismatch. Uses the smallest relevant workflow and handles shared build/device contention; not a rules importer.
+description: Route Android screenshot recognition, implementation, focused fixes, and XLog requests (日志排查, 日志验证, 加日志). Covers compile/build speed, MEMORY.md name mismatch, and shared build/device contention.
 ---
 
 # Android Fast Workflow
@@ -10,8 +10,8 @@ Own routing, scope and verification selection. Lanhu owns design interpretation 
 ## Route First
 
 - Known file/function: skip MEMORY.md. Otherwise search aliases, page/resource names or error text in the index; read nearest module rules. Ask only if multiple real areas change implementation.
-- Quick: precise file, resource value, layout delta or known fix. Smallest patch/check; no unrelated data, device or full UI audit.
-- Strict: BLE/protocol, SDK/AAR, migration, R8/release or state/ownership bugs. Relevant focused workflow and small state × event × expected-output matrix.
+- Quick requires a small change with a clear goal, concrete edit, impact scope, and acceptance criteria. File names, screenshots, and stack traces help locate the issue. Before writing, tell the user which file and function, resource key, or setting will change, what will change, the affected scope, and how to verify the expected result. For other changes, present a proposal and wait for explicit confirmation unless the user clearly asks you to proceed directly. When the user asks for a proposal first, wait for confirmation even for Quick changes.
+- Strict covers BLE/protocol, SDK/AAR, migration, R8/release or state/ownership bugs. Follow the proposal gate and use the relevant focused workflow and a small state × event × expected-output matrix.
 - Analysis-only: inspect/compare/plan without edits. A pending proposal is not an implementation to continue without confirmation.
 - Rework: “还是不对/没画好/继续微调/仍会复现”. Reopen latest affected evidence, parent layout/current diff and actual resource before editing; do not keep guessing parameters.
 - Approved plan: one current-diff feasibility check, then implement. Reopen only changed or disproven parts.
@@ -44,6 +44,8 @@ Reuse shared components against one confirmed contract: canonical implementation
 Check only affected data labels/fields/units/ranges, chart semantics, locales and shared behavior. For text/animation layout, cross-page data or legends, settings persistence/readback, failure-state interaction, or request payloads, read only the matching [Implementation Checks](references/implementation-checks.md) section during implementation or rework; do not run a full-page audit. Respect product/design precedence; distinguish page, dialog and draft states. Missing backend support remains a declared draft/placeholder boundary. Whole-background continuity and animation follow the Lanhu visual contract; copied assets or all-zero screenshots do not prove completion.
 
 ## Verification Selection
+
+For Android requests using “日志排查”, “日志验证”, or “加日志”, follow the [XLog device workflow](references/verification.md#xlog-device-verification). Add XLog, complete scoped static checks, then ask once for manual or automatic verification on a physical device unless the user already chose in this task.
 
 For UI/layout/interaction work, implement, complete minimal static checks and fix findings; then ask once for Paparazzi, device/emulator or static only, unless selected in this scope. Data-only and rules-only work does not need a screenshot-choice prompt. Before selection, do not run screenshots or probe/use devices. Paparazzi does not authorize ADB or dependencies. Existing values usually need static checks; new resources may need one resource task; type boundaries one compile/test; an APK or uncovered integration boundary may need assemble. Details and shared-session contention handling are in [Verification](references/verification.md).
 

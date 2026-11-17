@@ -55,7 +55,7 @@ When global hosts are explicitly requested, the importer also installs the low-f
    - `CLAUDE.md`, `GEMINI.md`, and `.github/copilot-instructions.md` are thin entrypoints pointing to `AGENTS.md`.
    - Do not create `CODEBUDDY.md` when it is absent because CodeBuddy falls back to `AGENTS.md`; when it already exists, merge only a marked thin entrypoint.
    - `MEMORY.md` is a project index and must not contain source-project business details.
-   - The root rules and Karpathy guidelines provide default prompt enhancement, focused interviewing, and a proposal gate before non-trivial writes; explicit `优化提示词`、`先采访我`、`先给方案` and `直接做` entries override the default flow.
+   - The root rules and Karpathy guidelines require a proposal and explicit confirmation before writes. A small Quick change can proceed after stating the concrete edit when the goal, edit, impact scope, and acceptance criteria are all clear. `直接做` explicitly authorizes proceeding, and `先给方案` requires a separate confirmation even for Quick changes. `优化提示词` and `先采访我` remain available.
    - `AGENTS/` also contains focused rule files for Karpathy behavior guidelines, testing, UI screenshots, image resources, custom views, commit migration, recording SDK/AAR flows, multilang strings, Android platform integration, neat-freak knowledge closeout, and R8/ProGuard.
    - The plugin also provides `android-fast-workflow` for fast Android task routing, screenshot recognition, compile-speed decisions, and MEMORY.md alias alignment.
    - The plugin separately provides `reasoning-playbooks` as an opt-in “常见 Prompt” skill. It is not copied into project or user-level rules by this importer.
