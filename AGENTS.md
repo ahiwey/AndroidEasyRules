@@ -49,6 +49,12 @@
 - 不修改 marketplace 配置，除非用户明确要求。
 - 不覆盖用户已有改动；不使用 `git reset --hard` 或破坏性 checkout。
 
+## 规则与 Skill 生成
+
+- 新增可复用规则默认写入 `AndroidEasyRules` 的 `plugins/android-easy-rules/skills/android-easy-rules/assets/rules-pack/`。仅适用于单个项目的规则写入该项目的规则文件。
+- 用户明确要求创建或更新 Skill 时，默认写入 `AndroidSampleSkill/skills/<skill-name>/`。用户指定产物位置时优先采用。找不到默认仓库或仓库不可写时，先询问可写路径。
+- 新规则或新 Skill 完成验证后，在最终回复提醒升级对应版本。新增规则提醒升级 `AndroidEasyRules` 规则包的 `VERSION`，新增 Skill 提醒升级 `AndroidSampleSkill` 仓库根目录的 `VERSION`。同次新增两类产物时同时提醒。收到用户明确确认后才修改版本号。
+
 ## 验证产物归档
 
 - 验证过程产生的报告、截图、录屏、日志、临时脚本与测试数据，默认保存到当前项目根目录 `testdocs/<YYYY-MM-DD-任务>/`；此约定已明确保存位置，无需再次询问，用户明确指定其他位置时优先遵从。

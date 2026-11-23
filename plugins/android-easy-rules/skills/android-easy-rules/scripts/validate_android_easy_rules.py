@@ -15,6 +15,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PLUGIN_SKILLS_DIR = SKILL_DIR.parent
 PACK_DIR = SKILL_DIR / "assets" / "rules-pack"
+EXPECTED_RULES_VERSION = "0.6.9"
+EXPECTED_RULES_VERSION_MARKER = f"<!-- ANDROID_EASY_RULES_VERSION: {EXPECTED_RULES_VERSION} -->"
 sys.path.insert(0, str(SCRIPT_DIR))
 import import_android_easy_rules as importer  # noqa: E402
 import check_android_easy_rules_version as version_checker  # noqa: E402
@@ -156,7 +158,7 @@ def validate_static_pack() -> None:
     import_rules = read(PACK_DIR / "IMPORT.md")
     readme = read(PACK_DIR / "README.md")
     rules_version = read(PACK_DIR / "VERSION").strip()
-    require(rules_version == "0.6.8", "rules-pack VERSION is not 0.6.8")
+    require(rules_version == EXPECTED_RULES_VERSION, f"rules-pack VERSION is not {EXPECTED_RULES_VERSION}")
     require(importer.read_rules_version(PACK_DIR) == rules_version, "importer VERSION parsing failed")
     require(
         (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
@@ -473,9 +475,8 @@ def validate_fixture_import() -> None:
             require(topic in root_agents, f"capability route missing: {topic}")
         require("ble-core/AGENTS.md" in memory, "BLE module route missing")
         require("reasoning-playbooks.md" not in root_agents, "reasoning route was imported into root rules")
-        version_marker = "<!-- ANDROID_EASY_RULES_VERSION: 0.6.8 -->"
-        require(root_agents.count(version_marker) == 1, "root rules version marker is invalid")
-        require(app_agents.count(version_marker) == 1, "app rules version marker is invalid")
+        require(root_agents.count(EXPECTED_RULES_VERSION_MARKER) == 1, "root rules version marker is invalid")
+        require(app_agents.count(EXPECTED_RULES_VERSION_MARKER) == 1, "app rules version marker is invalid")
         require(
             not (target / "AGENTS" / "reasoning-playbooks.md").exists(),
             "reasoning playbooks were copied into the target project",
@@ -541,7 +542,7 @@ def validate_legacy_marker_upgrade() -> None:
         require("Keep this project-specific rule." in merged, "legacy user rules were lost")
         require("Old imported rules" not in merged, "legacy marked rules were not replaced")
         require(
-            merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.8 -->") == 1,
+            merged.count(EXPECTED_RULES_VERSION_MARKER) == 1,
             "legacy project did not receive one current version marker",
         )
         app_agents = read(target / "app" / "AGENTS.md")
@@ -549,7 +550,7 @@ def validate_legacy_marker_upgrade() -> None:
         require("Keep app-specific notes." in app_agents, "legacy app user notes were lost")
         require("Old app rules" not in app_agents, "legacy app managed rules were not replaced")
         require("ANDROID_EASY_RULES_VERSION: 0.6.3" not in app_agents, "legacy app version marker remains")
-        require(app_agents.count("ANDROID_EASY_RULES_VERSION: 0.6.8") == 1, "legacy app version marker is invalid")
+        require(app_agents.count(EXPECTED_RULES_VERSION_MARKER) == 1, "legacy app version marker is invalid")
         require(business_rules in app_agents, "legacy app did not receive new business checks")
         require(app_agents.count("## 数据与交互一致性") == 1, "legacy app business checks were duplicated")
         before = snapshot_tree(target)
@@ -693,14 +694,14 @@ def validate_global_rule_sync() -> None:
                 require(merged.startswith(heading), f"new global rule heading is invalid: {host}")
             require(merged.count(importer.MARKER_START) == 1, f"global marker count is invalid: {path}")
             require(
-                merged.count("<!-- ANDROID_EASY_RULES_VERSION: 0.6.8 -->") == 1,
+                merged.count(EXPECTED_RULES_VERSION_MARKER) == 1,
                 f"global version marker is invalid: {path}",
             )
             require("推理与决策方法路由" not in merged, f"reasoning route leaked into: {path}")
 
         checker_home = user_home / ".android-easy-rules"
         require((checker_home / "check_version.py").is_file(), "global sync did not install checker")
-        require(read(checker_home / "VERSION").strip() == "0.6.8", "global VERSION is invalid")
+        require(read(checker_home / "VERSION").strip() == EXPECTED_RULES_VERSION, "global VERSION is invalid")
 
         before = snapshot_tree(user_home)
         importer.sync_global_rules(
@@ -899,7 +900,7 @@ def health_report() -> tuple[int, str]:
             "reasoning-playbooks.md" not in importer.generated_agents_section(),
             "隐藏天赋探索" in read(PACK_DIR / "reasoning-playbooks.md"),
             set(importer.GLOBAL_HOSTS) == {"codex", "claude", "workbuddy"},
-            read(PACK_DIR / "VERSION").strip() == "0.6.8",
+            read(PACK_DIR / "VERSION").strip() == EXPECTED_RULES_VERSION,
             (SCRIPT_DIR / "check_android_easy_rules_version.py").is_file(),
             "AndroidEasyRules 版本提醒" in read(PACK_DIR / "global-AGENTS.md"),
             "@./AGENTS.md" in importer.gemini_entry(),

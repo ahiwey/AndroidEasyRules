@@ -55,10 +55,12 @@
 - 根 `.gitignore` 使用 `/testdocs/` 忽略本地验证产物；首次产生材料时再创建目录，不生成占位文件。`docs/` 保留正式设计、协议和接入说明等长期文档；测试源码及需要版本管理的截图基准仍放在现有测试目录。
 - 此约定只约束今后生成的验证产物；不自动迁移、删除或取消跟踪历史 `docs/` 内容，不修改已有暂存状态。发现历史材料时先说明，另获明确授权后再整理。
 
-## Skill 生成与规则回流
+## 规则与 Skill 生成
 
 - Skill/规则的格式与导入健康评分只证明结构；效果须由代表案例和工具行为验证。App 没有当前视觉及必要运行证据时，不宣称整体 A+。
-- 用户明确要求创建或更新 Skill 时，默认在可写的 `AndroidSampleSkill/skills/<skill-name>/` 仓库中生成；如果找不到该仓库，先询问路径，不默认写入插件缓存、临时目录或 `$CODEX_HOME/skills`。
+- 新增可复用规则默认写入 `AndroidEasyRules` 的 `plugins/android-easy-rules/skills/android-easy-rules/assets/rules-pack/`。仅适用于单个项目的规则写入该项目的规则文件。
+- 用户明确要求创建或更新 Skill 时，默认写入 `AndroidSampleSkill/skills/<skill-name>/`。用户指定产物位置时优先采用。找不到默认仓库或仓库不可写时，先询问可写路径。
+- 新规则或新 Skill 完成验证后，在最终回复提醒升级对应版本。新增规则提醒升级 `AndroidEasyRules` 规则包的 `VERSION`，新增 Skill 提醒升级 `AndroidSampleSkill` 仓库根目录的 `VERSION`。同次新增两类产物时同时提醒。收到用户明确确认后才修改版本号。
 - Skill 完成并验证后，最终回复必须说明是否已提交和发布；尚未提交时明确提醒用户提交到 AndroidSampleSkill 的 Git 远端。只有用户授权时才执行 commit 或 push。
 - 工作流优化 Skill 修改智能体根规则或项目规则时，将可复用且不含项目事实的规则同步回 AndroidEasyRules 规则包并验证；当前电脑没有 AndroidEasyRules 时，只修改当前智能体和项目规则，不自动安装。
 

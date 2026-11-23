@@ -587,8 +587,11 @@ def generated_agents_section() -> str:
 - 此约定只约束今后生成的验证产物；不自动迁移、删除或取消跟踪历史 `docs/` 内容，不修改已有暂存状态。发现历史材料时先说明，另获明确授权后再整理。
 - 每次实质交付后，在最终回复正文询问结果是否满足需求，并说明可以继续迭代；纯闲聊和简短事实回答除外。不得为此使用终端弹框或选项工具。
 - 多文件修改、外部调研、构建测试、长文档或多轮工具操作等明显耗时或耗 Token 的任务完成后，在最终回复正文提示可以继续优化或沉淀为 Skill；只提示，不自动创建 Skill，也不得为此使用终端弹框或选项工具。
-- 用户明确要求创建或更新 Skill 时，默认生成到可写的 `AndroidSampleSkill/skills/<skill-name>/`；找不到仓库时先询问路径。完成验证后说明是否已提交和发布，未提交时提醒提交。
-- 工作流优化 Skill 修改根规则或项目规则时，把不含项目事实的通用规则同步回 AndroidEasyRules；当前电脑没有 AndroidEasyRules 时只更新本机和项目，不自动安装。
+- 新增可复用规则默认写入 `AndroidEasyRules` 的 `plugins/android-easy-rules/skills/android-easy-rules/assets/rules-pack/`。仅适用于单个项目的规则写入该项目的规则文件。
+- 用户明确要求创建或更新 Skill 时，默认写入 `AndroidSampleSkill/skills/<skill-name>/`。用户指定产物位置时优先采用。找不到默认仓库或仓库不可写时，先询问可写路径。
+- 新规则或新 Skill 完成验证后，在最终回复提醒升级对应版本。新增规则提醒升级 `AndroidEasyRules` 规则包的 `VERSION`，新增 Skill 提醒升级 `AndroidSampleSkill` 仓库根目录的 `VERSION`。同次新增两类产物时同时提醒。收到用户明确确认后才修改版本号。
+- Skill 完成并验证后，在最终回复说明是否已提交和发布。尚未提交时提醒用户提交到 AndroidSampleSkill 的 Git 远端。只有用户授权时才执行 commit 或 push。
+- 工作流优化 Skill 修改智能体根规则或项目规则时，将可复用且不含项目事实的规则同步回 AndroidEasyRules 规则包并验证。当前电脑没有 AndroidEasyRules 时，只修改当前智能体和项目，不自动安装。
 - 用户反馈“还是不对”“继续微调”“没画好”或“仍会复现”时视为返工信号：停止猜参数，重看最新证据、当前差异和运行时资源，再确认父布局、状态转换和可观察验收信号。
 - 异步、缓存、首次进入、绑定/解绑或重复请求问题先列最小“状态 × 事件 × 期望输出”矩阵，并区分请求级结果、单次尝试事件和对象所有权。
 - 业务定位先按关键词查 `MEMORY.md`，结构定位用 CodeGraph，固定文本和资源名用 `rg`。
@@ -743,16 +746,17 @@ def copy_rule_files(rules_pack: Path, target: Path, dry_run: bool) -> None:
             print(f"[copy] {dst}")
 
 
-def strip_template_development_checkpoints(template: str) -> str:
-    """Keep these upgradeable defaults only in the generated managed block.
+def strip_template_managed_sections(template: str) -> str:
+    """Keep upgradeable defaults only in the generated managed block.
 
     This operates on a source template, never on user-authored project content.
     """
-    prefix, found, suffix = template.partition("## 默认组件与数据边界检查\n")
-    if not found:
-        return template
-    _, next_heading, remaining = suffix.partition("\n## ")
-    return prefix.rstrip() + ("\n\n## " + remaining if next_heading else "\n")
+    for heading in ("## 默认组件与数据边界检查\n", "## 规则与 Skill 生成\n"):
+        prefix, found, suffix = template.partition(heading)
+        if found:
+            _, next_heading, remaining = suffix.partition("\n## ")
+            template = prefix.rstrip() + ("\n\n## " + remaining if next_heading else "\n")
+    return template
 
 
 def copy_module_rules(
@@ -767,7 +771,7 @@ def copy_module_rules(
         src = rules_pack / "android-app-AGENTS.template.md"
         dst = module_dir(target, app_module) / "AGENTS.md"
         if src.exists():
-            template = strip_template_development_checkpoints(fill_template(read_text(src), values))
+            template = strip_template_managed_sections(fill_template(read_text(src), values))
             app_section = generated_app_section(values)
             # Keep upgradeable business checks in the managed block only.
             heading = "## 数据与交互一致性\n"
@@ -918,7 +922,7 @@ def import_rules(
     app_module = detect_app_module(target, modules)
     values = detect_android_values(target, app_module)
 
-    root_template = strip_template_development_checkpoints(
+    root_template = strip_template_managed_sections(
         fill_template(read_text(rules_pack / "root-AGENTS.template.md"), values)
     )
     memory_template = fill_template(read_text(rules_pack / "MEMORY.template.md"), values)
