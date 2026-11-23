@@ -15,7 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PLUGIN_SKILLS_DIR = SKILL_DIR.parent
 PACK_DIR = SKILL_DIR / "assets" / "rules-pack"
-EXPECTED_RULES_VERSION = "0.6.9"
+EXPECTED_RULES_VERSION = "0.6.10"
 EXPECTED_RULES_VERSION_MARKER = f"<!-- ANDROID_EASY_RULES_VERSION: {EXPECTED_RULES_VERSION} -->"
 sys.path.insert(0, str(SCRIPT_DIR))
 import import_android_easy_rules as importer  # noqa: E402
@@ -714,6 +714,76 @@ def validate_global_rule_sync() -> None:
         require(before == snapshot_tree(user_home), "global rule sync is not idempotent")
 
 
+def validate_agent_delegation_import() -> None:
+    heading = "## 子代理委派与模型选择"
+    legacy_rule = (
+        "- 只有用户明确要求子代理、委派或并行 Agent 工作，且任务存在真正独立、可并行的工作流时才委派；"
+        "明确每项委派的输入、输出和完成标准，最终结论由主代理复核。"
+    )
+    cleanup_rule = "- 收尾时删除本次创建且后续无用的临时文件，不清理任务开始前已经存在或来源不明的文件。"
+    custom_rule = "- 设备验收由单 Agent 独立执行。"
+    legacy_position = f"{cleanup_rule}\n{legacy_rule}\n\n## 模型与技能路由\n"
+    old_managed = (
+        f"{importer.MARKER_START}\n<!-- ANDROID_EASY_RULES_VERSION: 0.6.8 -->\n"
+        f"Old imported rules.\n{importer.MARKER_END}\n"
+    )
+
+    def agent_section(text: str, label: str) -> str:
+        require(text.count(f"{heading}\n") == 1, f"{label}: expected one delegation heading")
+        body = text.split(f"{heading}\n", 1)[1]
+        return re.split(r"^## |^<!-- ANDROID_EASY_RULES_", body, maxsplit=1, flags=re.MULTILINE)[0].strip()
+
+    expected = agent_section(read(PACK_DIR / "root-AGENTS.template.md"), "root template")
+    for token in ("Quick", "gpt-6.2-sol", "gpt-6.2-astra", "主 Agent"):
+        require(token in expected, f"root template: delegation rule is missing {token}")
+    require(agent_section(read(PACK_DIR / "global-AGENTS.md"), "global template") == expected,
+            "global template: delegation rule differs from root template")
+
+    with TemporaryDirectory(prefix="android-easy-rules-delegation-") as temp:
+        root = Path(temp)
+        for label, initial, retained, legacy_count in (
+            ("fresh", None, "", 0),
+            ("existing", f"# User rules\n\n{custom_rule}\n", custom_rule, 0),
+            ("legacy", f"# User rules\n\n{legacy_position}\n{custom_rule}\n\n"
+             f"## 手写授权边界\n\n{legacy_rule}\n\n{old_managed}",
+             f"## 手写授权边界\n\n{legacy_rule}", 1),
+            ("unmarked", f"# User rules\n\n{legacy_position}\n{custom_rule}\n",
+             legacy_position, 1),
+        ):
+            target = root / label
+            create_fixture(target)
+            project_rules = target / "AGENTS.md"
+            if initial is not None:
+                write(project_rules, initial)
+
+            importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+            merged = read(project_rules)
+            require(agent_section(merged, label) == expected, f"{label}: imported delegation rule differs")
+            require(heading in merged.split(importer.MARKER_START, 1)[1].split(importer.MARKER_END, 1)[0],
+                    f"{label}: delegation rule is outside the managed section")
+            require(merged.count(legacy_rule) == legacy_count, f"{label}: legacy rule count is invalid")
+            require(retained in merged, f"{label}: existing project restrictions were lost")
+            if label == "legacy":
+                require(legacy_position not in merged, "legacy: old template rule remains")
+                require(cleanup_rule in merged and custom_rule in merged, "legacy: surrounding rules were lost")
+                require("Old imported rules." not in merged, "legacy: managed block was not replaced")
+            once = snapshot_tree(target)
+            importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
+            require(snapshot_tree(target) == once, f"{label}: delegation import is not idempotent")
+
+        user_home = root / "user"
+        codex_rules = importer.global_rule_paths(user_home)["codex"][0]
+        write(codex_rules, f"# User rules\n\n{custom_rule}\n\n"
+              f"{old_managed.replace('Old imported rules.', legacy_rule)}")
+        importer.sync_global_rules(PACK_DIR, ["codex"], dry_run=False, strict=True, user_home=user_home)
+        merged = read(codex_rules)
+        require(agent_section(merged, "Codex") == expected, "Codex: imported delegation rule differs")
+        require(custom_rule in merged and legacy_rule not in merged, "Codex: custom or legacy rule was mishandled")
+        once = snapshot_tree(user_home)
+        importer.sync_global_rules(PACK_DIR, ["codex"], dry_run=False, strict=True, user_home=user_home)
+        require(snapshot_tree(user_home) == once, "Codex: delegation rule sync is not idempotent")
+
+
 def validate_version_checker() -> None:
     now = 1_800_000_000.0
     with TemporaryDirectory(prefix="android-easy-rules-checker-") as temp:
@@ -927,6 +997,7 @@ def main() -> int:
     validate_development_checkpoints()
     validate_existing_entrypoint_merge()
     validate_global_rule_sync()
+    validate_agent_delegation_import()
     validate_version_checker()
     validate_multidimension_flavor_import()
     score, grade = health_report()

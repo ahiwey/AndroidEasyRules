@@ -11,6 +11,16 @@ from pathlib import Path
 
 MARKER_START = "<!-- ANDROID_EASY_RULES_START -->"
 MARKER_END = "<!-- ANDROID_EASY_RULES_END -->"
+DELEGATION_HEADING = "## 子代理委派与模型选择"
+LEGACY_DELEGATION_RULE = (
+    "- 只有用户明确要求子代理、委派或并行 Agent 工作，且任务存在真正独立、可并行的工作流时才委派；"
+    "明确每项委派的输入、输出和完成标准，最终结论由主代理复核。"
+)
+LEGACY_DELEGATION_CONTEXT = (
+    "- 收尾时删除本次创建且后续无用的临时文件，不清理任务开始前已经存在或来源不明的文件。\n"
+    f"{LEGACY_DELEGATION_RULE}\n\n"
+    "## 模型与技能路由\n"
+)
 VERSION_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 RULE_FILES = [
@@ -86,7 +96,8 @@ def ensure_verification_gitignore(target: Path, dry_run: bool) -> None:
     print(f"[write] append /testdocs/ to {path}")
 
 
-def merge_marked_file(path: Path, generated: str, section: str, dry_run: bool) -> None:
+def merge_marked_file(path: Path, generated: str, section: str, dry_run: bool,
+                      *, retire_legacy_delegation: bool = False) -> None:
     if not path.exists():
         marked = f"{MARKER_START}\n{section.rstrip()}\n{MARKER_END}"
         write_text(path, generated.rstrip() + "\n\n" + marked + "\n", dry_run)
@@ -98,7 +109,14 @@ def merge_marked_file(path: Path, generated: str, section: str, dry_run: bool) -
         rf"{re.escape(MARKER_START)}.*?{re.escape(MARKER_END)}",
         re.DOTALL,
     )
-    if pattern.search(original):
+    existing_marker = pattern.search(original)
+    if existing_marker:
+        if retire_legacy_delegation and DELEGATION_HEADING not in existing_marker.group():
+            # Only retire the exact pre-marker paragraph shipped in earlier root templates.
+            prefix = original[:existing_marker.start()]
+            retired = LEGACY_DELEGATION_CONTEXT.replace(LEGACY_DELEGATION_RULE + "\n", "")
+            prefix = prefix.replace(LEGACY_DELEGATION_CONTEXT, retired, 1)
+            original = prefix + original[existing_marker.start():]
         merged = pattern.sub(lambda _: marked, original)
     else:
         merged = original.rstrip() + "\n\n" + marked + "\n"
@@ -925,6 +943,12 @@ def import_rules(
     root_template = strip_template_managed_sections(
         fill_template(read_text(rules_pack / "root-AGENTS.template.md"), values)
     )
+    root_section = generated_root_section(values)
+    prefix, heading, suffix = root_template.partition(DELEGATION_HEADING + "\n")
+    if heading:
+        routing, next_heading, remaining = suffix.partition("\n## ")
+        root_section += "\n\n" + heading + routing.rstrip()
+        root_template = prefix.rstrip() + ("\n\n## " + remaining if next_heading else "\n")
     memory_template = fill_template(read_text(rules_pack / "MEMORY.template.md"), values)
     validate_generated_texts(rules_pack, values, root_template, memory_template, strict=strict)
 
@@ -932,8 +956,9 @@ def import_rules(
     merge_marked_file(
         target / "AGENTS.md",
         root_template,
-        versioned_section(generated_root_section(values), rules_version),
+        versioned_section(root_section, rules_version),
         dry_run,
+        retire_legacy_delegation=bool(heading),
     )
     merge_thin_entrypoint(target / "CLAUDE.md", claude_entry(), dry_run)
     merge_thin_entrypoint(target / "GEMINI.md", gemini_entry(), dry_run)
