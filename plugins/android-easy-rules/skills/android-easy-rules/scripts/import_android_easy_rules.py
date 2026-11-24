@@ -12,6 +12,7 @@ from pathlib import Path
 MARKER_START = "<!-- ANDROID_EASY_RULES_START -->"
 MARKER_END = "<!-- ANDROID_EASY_RULES_END -->"
 DELEGATION_HEADING = "## 子代理委派与模型选择"
+GIT_MESSAGE_HEADING = "## Git 提交信息"
 LEGACY_DELEGATION_RULE = (
     "- 只有用户明确要求子代理、委派或并行 Agent 工作，且任务存在真正独立、可并行的工作流时才委派；"
     "明确每项委派的输入、输出和完成标准，最终结论由主代理复核。"
@@ -944,11 +945,13 @@ def import_rules(
         fill_template(read_text(rules_pack / "root-AGENTS.template.md"), values)
     )
     root_section = generated_root_section(values)
-    prefix, heading, suffix = root_template.partition(DELEGATION_HEADING + "\n")
-    if heading:
-        routing, next_heading, remaining = suffix.partition("\n## ")
-        root_section += "\n\n" + heading + routing.rstrip()
-        root_template = prefix.rstrip() + ("\n\n## " + remaining if next_heading else "\n")
+    has_delegation = f"{DELEGATION_HEADING}\n" in root_template
+    for managed_heading in (GIT_MESSAGE_HEADING, DELEGATION_HEADING):
+        prefix, heading, suffix = root_template.partition(managed_heading + "\n")
+        if heading:
+            body, next_heading, remaining = suffix.partition("\n## ")
+            root_section += "\n\n" + heading + body.rstrip()
+            root_template = prefix.rstrip() + ("\n\n## " + remaining if next_heading else "\n")
     memory_template = fill_template(read_text(rules_pack / "MEMORY.template.md"), values)
     validate_generated_texts(rules_pack, values, root_template, memory_template, strict=strict)
 
@@ -958,7 +961,7 @@ def import_rules(
         root_template,
         versioned_section(root_section, rules_version),
         dry_run,
-        retire_legacy_delegation=bool(heading),
+        retire_legacy_delegation=has_delegation,
     )
     merge_thin_entrypoint(target / "CLAUDE.md", claude_entry(), dry_run)
     merge_thin_entrypoint(target / "GEMINI.md", gemini_entry(), dry_run)

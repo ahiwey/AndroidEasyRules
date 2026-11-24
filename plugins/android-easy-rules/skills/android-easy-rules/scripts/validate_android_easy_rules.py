@@ -15,7 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PLUGIN_SKILLS_DIR = SKILL_DIR.parent
 PACK_DIR = SKILL_DIR / "assets" / "rules-pack"
-EXPECTED_RULES_VERSION = "0.6.10"
+EXPECTED_RULES_VERSION = "0.6.11"
 EXPECTED_RULES_VERSION_MARKER = f"<!-- ANDROID_EASY_RULES_VERSION: {EXPECTED_RULES_VERSION} -->"
 sys.path.insert(0, str(SCRIPT_DIR))
 import import_android_easy_rules as importer  # noqa: E402
@@ -427,6 +427,18 @@ def validate_verification_artifacts() -> None:
     print("Verification artifacts: destination, preservation, dry-run and ignore idempotence passed")
 
 
+def require_git_message_rule(root_agents: str) -> None:
+    heading = importer.GIT_MESSAGE_HEADING
+    root_template = read(PACK_DIR / "root-AGENTS.template.md")
+    rule_section = heading + root_template.split(heading, 1)[1].split("\n## ", 1)[0].rstrip()
+    require(rule_section in read(PACK_DIR / "global-AGENTS.md"), "Git message rule differs between templates")
+    for token in ("版本信息", "git信息", "只读 Git 操作", "只回复一条"):
+        require(token in rule_section, f"Git message rule is missing {token}")
+    managed = root_agents.split(importer.MARKER_START, 1)[1].split(importer.MARKER_END, 1)[0]
+    require(rule_section in managed and root_agents.count(heading) == 1,
+            "Git message rule must appear once in the root managed block")
+
+
 def validate_fixture_import() -> None:
     with TemporaryDirectory(prefix="android-easy-rules-") as temp:
         target = Path(temp)
@@ -455,6 +467,8 @@ def validate_fixture_import() -> None:
         root_agents = read(target / "AGENTS.md")
         memory = read(target / "MEMORY.md")
         app_agents = read(target / "app" / "AGENTS.md")
+        require_git_message_rule(root_agents)
+        require(importer.GIT_MESSAGE_HEADING not in app_agents, "Git message rule leaked into app AGENTS")
         for route in (root_agents, app_agents, read(target / "chatkit" / "AGENTS.md")):
             require("rtl-layout-rules.md" in route, "new project/module is missing the RTL checkpoint")
         require(read(target / "AGENTS" / "rtl-layout-rules.md") == read(PACK_DIR / "rtl-layout-rules.md"),
@@ -540,6 +554,7 @@ def validate_legacy_marker_upgrade() -> None:
         importer.import_rules(target, PACK_DIR, dry_run=False, strict=True)
         merged = read(target / "AGENTS.md")
         require("Keep this project-specific rule." in merged, "legacy user rules were lost")
+        require_git_message_rule(merged)
         require("Old imported rules" not in merged, "legacy marked rules were not replaced")
         require(
             merged.count(EXPECTED_RULES_VERSION_MARKER) == 1,
@@ -734,7 +749,10 @@ def validate_agent_delegation_import() -> None:
         return re.split(r"^## |^<!-- ANDROID_EASY_RULES_", body, maxsplit=1, flags=re.MULTILINE)[0].strip()
 
     expected = agent_section(read(PACK_DIR / "root-AGENTS.template.md"), "root template")
-    for token in ("Quick", "gpt-6.2-sol", "gpt-6.2-astra", "主 Agent"):
+    for token in (
+        "Quick", "主 Agent", "gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra", "reasoning_effort",
+        "一次低成本的本地查询", "同类核对合并", "避免重复派发同一任务", "重新派发剩余部分",
+    ):
         require(token in expected, f"root template: delegation rule is missing {token}")
     require(agent_section(read(PACK_DIR / "global-AGENTS.md"), "global template") == expected,
             "global template: delegation rule differs from root template")
