@@ -15,7 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PLUGIN_SKILLS_DIR = SKILL_DIR.parent
 PACK_DIR = SKILL_DIR / "assets" / "rules-pack"
-EXPECTED_RULES_VERSION = "0.6.11"
+EXPECTED_RULES_VERSION = "0.6.12"
 EXPECTED_RULES_VERSION_MARKER = f"<!-- ANDROID_EASY_RULES_VERSION: {EXPECTED_RULES_VERSION} -->"
 sys.path.insert(0, str(SCRIPT_DIR))
 import import_android_easy_rules as importer  # noqa: E402
@@ -752,8 +752,13 @@ def validate_agent_delegation_import() -> None:
     for token in (
         "Quick", "主 Agent", "gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol", "gpt-6.2-astra", "reasoning_effort",
         "一次低成本的本地查询", "同类核对合并", "避免重复派发同一任务", "重新派发剩余部分",
+        "普通工程任务默认用 `gpt-6.2-sol`（`high`）",
+        "根因未明或高风险的任务从 `gpt-6.2-astra`（`xhigh`）开始",
+        "局部 UI 修复，可由同一 Terra",
+        "小型代码修复可用 `medium`",
     ):
         require(token in expected, f"root template: delegation rule is missing {token}")
+    require("推理强度默认用极高" not in expected, "root template: obsolete reasoning fallback")
     require(agent_section(read(PACK_DIR / "global-AGENTS.md"), "global template") == expected,
             "global template: delegation rule differs from root template")
 
