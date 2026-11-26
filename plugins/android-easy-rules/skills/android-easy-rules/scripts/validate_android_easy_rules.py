@@ -15,7 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PLUGIN_SKILLS_DIR = SKILL_DIR.parent
 PACK_DIR = SKILL_DIR / "assets" / "rules-pack"
-EXPECTED_RULES_VERSION = "0.6.13"
+EXPECTED_RULES_VERSION = "0.6.14"
 EXPECTED_RULES_VERSION_MARKER = f"<!-- ANDROID_EASY_RULES_VERSION: {EXPECTED_RULES_VERSION} -->"
 sys.path.insert(0, str(SCRIPT_DIR))
 import import_android_easy_rules as importer  # noqa: E402
@@ -657,6 +657,8 @@ def validate_existing_entrypoint_merge() -> None:
             merged = read(path)
             require("新增字符串一律写入该文件" in merged and "告知用户文件路径和资源 key" in merged,
                     f"existing rules do not activate the strings.xml storage contract: {path.name}")
+            require("同次完成目标语言的翻译或复核" in merged,
+                    f"existing rules do not activate same-task localization: {path.name}")
         require(read(target / "AGENTS" / "multilang-string-rules.md") == read(PACK_DIR / "multilang-string-rules.md"),
                 "imported string storage contract differs from the source pack")
         require(layout.read_bytes() == layout_before, "rules import unexpectedly rewrote app layout code")
